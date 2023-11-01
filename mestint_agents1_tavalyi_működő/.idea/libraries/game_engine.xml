@@ -3,7 +3,9 @@
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/game_engine.jar!/" />
     </CLASSES>
-    <JAVADOC />
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/game_engine.jar!/javadoc" />
+    </JAVADOC>
     <SOURCES>
       <root url="jar://$PROJECT_DIR$/game_engine.jar!/" />
     </SOURCES>
