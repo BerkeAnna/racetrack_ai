@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.*;
 
 //BFS function in RaceTrackGame
 public class SamplePlayer extends RaceTrackPlayer {
@@ -26,11 +27,14 @@ public class SamplePlayer extends RaceTrackPlayer {
     private Direction right = RaceTrackGame.DIRECTIONS[5];
     private Direction up = RaceTrackGame.DIRECTIONS[3];
     private Direction stay = RaceTrackGame.DIRECTIONS[0];
+    private int[] goalPosition;
 
     public SamplePlayer(PlayerState state, Random random, int[][] track, Coin[] coins, int color) {
         super(state, random, track, coins, color);
         this.track = track;
-
+        this.goalPosition = findGoalPosition();
+        System.out.println("the goal posixxxxxx: " + goalPosition[0]);
+        System.out.println("the goal posiy: " + goalPosition[1]);
         /*
         track-palya:
         System.out.println("A track[4][1]: " + track[4][1] ); --- fal: 2
@@ -61,18 +65,36 @@ public class SamplePlayer extends RaceTrackPlayer {
         */
 
     }
-
     private class Node {
-        public Node parent;
-        public int i, j, g, h;
-        public int f() { return g + h; }
+        int i, j;
+        Node parent;
+        int g, h;
 
-        public Node(Node parent, int i, int j, int g, int h) {
-            this.parent = parent;
+        Node(int i, int j, Node parent, int g, int h) {
             this.i = i;
             this.j = j;
+            this.parent = parent;
             this.g = g;
             this.h = h;
+        }
+
+        int f() {
+            return g + h;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null || getClass() != obj.getClass())
+                return false;
+            Node node = (Node) obj;
+            return i == node.i && j == node.j;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(i, j);
         }
     }
     private int[] findGoalPosition() {
@@ -86,10 +108,9 @@ public class SamplePlayer extends RaceTrackPlayer {
         return  null;
     }
     private boolean isGoal(Node node) {
-        int[] goalPosition = findGoalPosition();
         return node.i == goalPosition[0] && node.j == goalPosition[1];
     }
-    private Direction reconstructTheGoodPath(HashMap<Node, Node> prev, Node current) {
+    private Direction reconstructTheGoodPath(Map<Node, Node> prev, Node current) {
         Node path = current;
         Node next = null;
 
@@ -106,6 +127,7 @@ public class SamplePlayer extends RaceTrackPlayer {
         }
         return stay; // Ha nincs következő lépés, maradunk
     }
+
     private boolean canMoveTo(int i, int j) {
         if (i < 0 || i >= track.length || j < 0 || j >= track[0].length) {
             return false; // A pálya szélein kívül esik
@@ -114,7 +136,7 @@ public class SamplePlayer extends RaceTrackPlayer {
     }
 
     private int calHeuristic(int i, int j) {
-        int[] goalPosition = findGoalPosition();
+       // int[] goalPosition = findGoalPosition();
         if (goalPosition == null) {
             // Hibakezelés, ha a célmező nem található
             return Integer.MAX_VALUE;
@@ -125,105 +147,46 @@ public class SamplePlayer extends RaceTrackPlayer {
     }
 
 
-    public Direction getDirection(long var1) {
-        //----------------------------------------------------------------------
 
+
+    public Direction getDirection(long var1) {
         int currentRow = state.i;
         int currentColumn = state.j;
 
-        PriorityQueue<Node> open = new PriorityQueue<>(Comparator.comparingInt(Node::f));
-        Set<Node> closed = new HashSet<>();
-        HashMap<Node, Node> cameFrom = new HashMap<>();
-        Node start = new Node(null, currentRow, currentColumn, 0, calHeuristic(currentRow, currentColumn));
+        PriorityQueue<Node> openSet = new PriorityQueue<>(Comparator.comparingInt(Node::f));
+        Set<Node> closedSet = new HashSet<>();
+        Map<Node, Node> cameFrom = new HashMap<>();
 
+        Node start = new Node(currentRow, currentColumn, null, 0, calHeuristic(currentRow, currentColumn));
+        openSet.add(start);
 
-        open.add(start);
-        while (!open.isEmpty()) {
-            Node current = open.poll();
+        while (!openSet.isEmpty()) {
+            Node current = openSet.poll();
 
             if (isGoal(current)) {
                 return reconstructTheGoodPath(cameFrom, current);
             }
 
-            closed.add(current);
+            closedSet.add(current);
 
             for (Direction direction : RaceTrackGame.DIRECTIONS) {
                 int newI = current.i + direction.i;
                 int newJ = current.j + direction.j;
+                Node neighbor = new Node(newI, newJ, current, current.g + 1, calHeuristic(newI, newJ));
 
-                if (canMoveTo(newI, newJ)) {
-                    Node neighbor = new Node(current, newI, newJ, current.g + 1, calHeuristic(newI, newJ));
+                if (closedSet.contains(neighbor) || !canMoveTo(newI, newJ)) {
+                    continue;
+                }
 
-                    if (closed.contains(neighbor)) {
-                        continue;
-                    }
-
-                    if (!open.contains(neighbor) || open.peek().g > neighbor.g) {
-                        cameFrom.put(neighbor, current);
-                        open.add(neighbor);
+                if (!openSet.contains(neighbor) || neighbor.g < current.g) {
+                    cameFrom.put(neighbor, current);
+                    if (!openSet.contains(neighbor)) {
+                        openSet.add(neighbor);
                     }
                 }
             }
         }
 
-
-
-        //----------------------------------------------------------------------
-        //hogy latom a mezoket?
-        //ha latom, akkor generalni kellene egy cost-os tablat, amit latok,
-        //utana itt kellene megoldani
-
-        //1. le kell kerni a cella koordinatait, ahol all a jatekos
-        //2. a kornyezo cellak lekerese / tabla lekerese
-/*
-        int currentRow = state.i;
-        int currentColumn = state.j;
-
-*/
-
-
-        //most csak a pálya szélét nézi, azért nem lép feljebb, mert még nem ért el a pálya végére?
-        if (currentRow + down.i >= track.length || (track[currentRow + down.i][currentColumn] & RaceTrackGame.WALL) != 0) {
-            // If moving down would hit the bottom or a wall, then change direction.
-            // This is where you would decide to move left, right, or up instead, or even stay.
-            // For example, if it's safe to move right, then do so:
-            if (currentColumn + right.j < track[0].length && (track[currentRow][currentColumn + right.j] & RaceTrackGame.WALL) == 0) {
-                return right;
-            }
-            // If it's not safe to move right, check if it's safe to move up, and so on.
-            // You'll need to add your logic here based on how you want the car to behave.
-        } else {
-            // If it's safe to move down, then move down.
-            return down;
-        }
-        if (currentRow + up.i >= 0 && (track[currentRow + up.i][currentColumn] & RaceTrackGame.WALL) == 0) {
-            return up;
-        }
-
-        // If none of the above conditions are met, the car will stay in place.
-        // You might want to change this to some other behavior based on your game's rules.
         return stay;
-
-
-
-        // Ha nincs fal a lefelé irányban, mozoghatunk lefelé
-
-        /*
-        LEPESIRANYOK
-        --------------------------------------------
-        RaceTrackGame.DIRECTIONS[0] - helyben marad
-        RaceTrackGame.DIRECTIONS[1] - balra
-        RaceTrackGame.DIRECTIONS[2] - balra fel srégan
-        RaceTrackGame.DIRECTIONS[3] - felfelé
-        RaceTrackGame.DIRECTIONS[4] - jobbra fel srégan
-        RaceTrackGame.DIRECTIONS[5] => jobbra
-        RaceTrackGame.DIRECTIONS[6] - jobbra le srégan
-        RaceTrackGame.DIRECTIONS[7] - lefelé
-        RaceTrackGame.DIRECTIONS[8] - balra le
-        ------------------------------------------------
-        RaceTrackGame.DIRECTIONS[9] - el se indult??
-        RaceTrackGame.DIRECTIONS[10] - ez se
-        RaceTrackGame.DIRECTIONS[11] - ez se
-         */
     }
 }
