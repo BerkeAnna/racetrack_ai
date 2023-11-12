@@ -28,11 +28,13 @@ public class SamplePlayer extends RaceTrackPlayer {
     private Direction up = RaceTrackGame.DIRECTIONS[3];
     private Direction stay = RaceTrackGame.DIRECTIONS[0];
     private int[] goalPosition;
+    private Set<Node> visited;
 
     public SamplePlayer(PlayerState state, Random random, int[][] track, Coin[] coins, int color) {
         super(state, random, track, coins, color);
         this.track = track;
         this.goalPosition = findGoalPosition();
+        this.visited = new HashSet<>();
         System.out.println("the goal posixxxxxx: " + goalPosition[0]);
         System.out.println("the goal posiy: " + goalPosition[1]);
         /*
@@ -84,10 +86,8 @@ public class SamplePlayer extends RaceTrackPlayer {
 
         @Override
         public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null || getClass() != obj.getClass())
-                return false;
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
             Node node = (Node) obj;
             return i == node.i && j == node.j;
         }
@@ -97,15 +97,16 @@ public class SamplePlayer extends RaceTrackPlayer {
             return Objects.hash(i, j);
         }
     }
+
     private int[] findGoalPosition() {
-        for(int i =0; i<track.length; i++){
-            for(int j=0; j< track[i].length; j++){
+        for (int i = 0; i < track.length; i++) {
+            for (int j = 0; j < track[i].length; j++) {
                 if ((track[i][j] & RaceTrackGame.FINISH) == RaceTrackGame.FINISH) {
-                    return new int[] { i, j };
+                    return new int[]{i, j};
                 }
             }
         }
-        return  null;
+        return null;
     }
     private boolean isGoal(Node node) {
         return node.i == goalPosition[0] && node.j == goalPosition[1];
@@ -128,23 +129,26 @@ public class SamplePlayer extends RaceTrackPlayer {
         return stay; // Ha nincs következő lépés, maradunk
     }
 
-    private boolean canMoveTo(int i, int j) {
+    private boolean canMoveTo(int i, int j, Node current) {
         if (i < 0 || i >= track.length || j < 0 || j >= track[0].length) {
             return false; // A pálya szélein kívül esik
         }
-        return (track[i][j] & RaceTrackGame.WALL) == 0; // Nincs fal
+        if ((track[i][j] & RaceTrackGame.WALL) != 0) {
+            return false; // Fal van a mezőn
+        }
+        Node potentialMove = new Node(i, j, current, 0, 0);
+        return !visited.contains(potentialMove); // Ellenőrizzük, hogy már jártunk-e ezen a mezőn
     }
 
     private int calHeuristic(int i, int j) {
-       // int[] goalPosition = findGoalPosition();
         if (goalPosition == null) {
-            // Hibakezelés, ha a célmező nem található
             return Integer.MAX_VALUE;
         }
         int goalRow = goalPosition[0];
         int goalColumn = goalPosition[1];
-        return Math.abs(i - goalRow) + Math.abs(j - goalColumn);
+        return (int) Math.sqrt((i - goalRow) * (i - goalRow) + (j - goalColumn) * (j - goalColumn));
     }
+
 
 
 
@@ -156,9 +160,11 @@ public class SamplePlayer extends RaceTrackPlayer {
         PriorityQueue<Node> openSet = new PriorityQueue<>(Comparator.comparingInt(Node::f));
         Set<Node> closedSet = new HashSet<>();
         Map<Node, Node> cameFrom = new HashMap<>();
-
+        visited.clear();
         Node start = new Node(currentRow, currentColumn, null, 0, calHeuristic(currentRow, currentColumn));
+        visited.add(start); // Kezdőpont hozzáadása a meglátogatottakhoz
         openSet.add(start);
+
 
         while (!openSet.isEmpty()) {
             Node current = openSet.poll();
@@ -172,21 +178,27 @@ public class SamplePlayer extends RaceTrackPlayer {
             for (Direction direction : RaceTrackGame.DIRECTIONS) {
                 int newI = current.i + direction.i;
                 int newJ = current.j + direction.j;
-                Node neighbor = new Node(newI, newJ, current, current.g + 1, calHeuristic(newI, newJ));
 
-                if (closedSet.contains(neighbor) || !canMoveTo(newI, newJ)) {
+                if (!canMoveTo(newI, newJ, current)) {
                     continue;
                 }
 
-                if (!openSet.contains(neighbor) || neighbor.g < current.g) {
-                    cameFrom.put(neighbor, current);
-                    if (!openSet.contains(neighbor)) {
-                        openSet.add(neighbor);
-                    }
+                Node neighbor = new Node(newI, newJ, current, current.g + 1, calHeuristic(newI, newJ));
+
+                // Ellenőrizzük, hogy a szomszédos mezőt korábban már felfedeztük-e
+                if (closedSet.contains(neighbor) || (openSet.contains(neighbor) && neighbor.g >= current.g + 1)) {
+                    continue;
+                }
+
+                cameFrom.put(neighbor, current);
+                visited.add(neighbor);
+                if (!openSet.contains(neighbor)) {
+                    openSet.add(neighbor);
                 }
             }
         }
 
-        return stay;
+
+        return stay; // Ha nincs elérhető cél, maradunk
     }
 }
