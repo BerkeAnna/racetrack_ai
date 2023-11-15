@@ -3,8 +3,7 @@ import game.racetrack.RaceTrackGame;
 import game.racetrack.RaceTrackPlayer;
 import game.racetrack.utils.Coin;
 import game.racetrack.utils.PlayerState;
-import java.util.Random;
-import java.util.*;
+import java.util.Random;import java.util.*;
 
 public class SamplePlayer extends RaceTrackPlayer {
     private int[][] track;
@@ -16,12 +15,15 @@ public class SamplePlayer extends RaceTrackPlayer {
         this.track = track;
         this.goalPosition = findGoalPosition();
         this.visited = new HashSet<>();
+        printHeuristicTable();
+        printCostsTable();
     }
 
     private class Node {
         int i, j;
         Node parent;
         int g, h;
+        boolean open, checked, solid;
 
         Node(int i, int j, Node parent, int g, int h) {
             this.i = i;
@@ -31,9 +33,31 @@ public class SamplePlayer extends RaceTrackPlayer {
             this.h = h;
         }
 
+        private void printCostsTable() {
+            for (int i = 0; i < track.length; i++) {
+                for (int j = 0; j < track[i].length; j++) {
+                    System.out.print(f() + "-" + g);
+                }
+                System.out.println();
+            }
+        }
+
         int f() {
             return g + h;
         }
+
+        void setOpen(boolean isOpen) {
+            this.open = isOpen;
+        }
+
+        void setChecked(boolean isChecked) {
+            this.checked = isChecked;
+        }
+
+        void setSolid(boolean isSolid) {
+            this.solid = isSolid;
+        }
+
 
         @Override
         public boolean equals(Object obj) {
@@ -64,85 +88,130 @@ public class SamplePlayer extends RaceTrackPlayer {
         return node.i == goalPosition[0] && node.j == goalPosition[1];
     }
 
-    private Direction reconstructTheGoodPath(Map<Node, Node> prev, Node current) {
-        Node path = current;
-        Node next = null;
-
-        while (prev.containsKey(path)) {
-            next = path;
-            path = prev.get(path);
+    private Direction reconstructPath(Node goal) {
+        LinkedList<Direction> path = new LinkedList<>();
+        Node current = goal;
+        while (current.parent != null) {
+            path.addFirst(new Direction(current.i - current.parent.i, current.j - current.parent.j));
+            current = current.parent;
         }
-
-        if (next != null) {
-            int di = next.i - path.i;
-            int dj = next.j - path.j;
-            return new Direction(di, dj);
-        }
-        return RaceTrackGame.DIRECTIONS[0]; // Stay if no next step
+        return path.isEmpty() ? RaceTrackGame.DIRECTIONS[0] : path.getFirst();
     }
 
     private boolean canMoveTo(int i, int j) {
         if (i < 0 || i >= track.length || j < 0 || j >= track[0].length) {
-            return false; // Out of bounds
+            return false;
         }
-        if ((track[i][j] & RaceTrackGame.WALL) != 0) {
-            return false; // Wall present
-        }
-        return !visited.contains(new Node(i, j, null, 0, 0));
+        return (track[i][j] & RaceTrackGame.WALL) == 0;
     }
 
-    private int calHeuristic(int i, int j) {
-        if (goalPosition == null) {
-            return Integer.MAX_VALUE;
-        }
-        int goalRow = goalPosition[0];
-        int goalColumn = goalPosition[1];
-        return Math.abs(i - goalRow) + Math.abs(j - goalColumn); // Manhattan distance
+    private int calculateHeuristic(int i, int j) {
+        return Math.abs(i - goalPosition[0]) + Math.abs(j - goalPosition[1]);
     }
 
-    public Direction getDirection(long var1) {
+    // ... [A korábbi osztálydefiníciók]
+
+    private void printHeuristicTable() {
+        for (int i = 0; i < track.length; i++) {
+            for (int j = 0; j < track[i].length; j++) {
+                System.out.print(calculateHeuristic(i, j) + "\t");
+            }
+            System.out.println();
+        }
+    }
+
+
+    @Override
+    public Direction getDirection(long timeBudget) {
         int currentRow = state.i;
         int currentColumn = state.j;
+        int currentSpeedI = state.vi;  // A jelenlegi sebességvektor i komponense
+        int currentSpeedJ = state.vj;  // A jelenlegi sebességvektor j komponense
 
         PriorityQueue<Node> openSet = new PriorityQueue<>(Comparator.comparingInt(Node::f));
-        Set<Node> closedSet = new HashSet<>();
         Map<Node, Node> cameFrom = new HashMap<>();
-        visited.clear();
-        Node start = new Node(currentRow, currentColumn, null, 0, calHeuristic(currentRow, currentColumn));
-        visited.add(start);
+        Node start = new Node(currentRow, currentColumn, null, 0, calculateHeuristic(currentRow, currentColumn));
+        start.setOpen(true);
         openSet.add(start);
+        visited.clear();
 
         while (!openSet.isEmpty()) {
             Node current = openSet.poll();
 
+            if (visited.contains(current)) {
+                continue;
+            }
+            current.setChecked(true);
+            visited.add(current);
+
+            //System.out.println("Current Node (" + current.i + ", " + current.j + ") - g: " + current.g + ", f: " + current.f());
+
+
             if (isGoal(current)) {
-                return reconstructTheGoodPath(cameFrom, current);
+                return reconstructPath(current);
             }
 
-            closedSet.add(current);
+            for (int di = -1; di <= 1; di++) {
+                for (int dj = -1; dj <= 1; dj++) {
+                    int nextSpeedI = currentSpeedI + di;
+                    int nextSpeedJ = currentSpeedJ + dj;
+                    int nextRow = current.i + nextSpeedI;
+                    int nextColumn = current.j + nextSpeedJ;
 
-            for (Direction direction : RaceTrackGame.DIRECTIONS) {
-                int newI = current.i + direction.i;
-                int newJ = current.j + direction.j;
+                    if (!canMoveTo(nextRow, nextColumn)) {
+                        continue;
+                    }
 
-                if (!canMoveTo(newI, newJ)) {
-                    continue;
-                }
+                    Node neighbor = new Node(nextRow, nextColumn, current, current.g + 1, calculateHeuristic(nextRow, nextColumn));
+                    if (visited.contains(neighbor) || (cameFrom.containsKey(neighbor) && neighbor.g >= current.g + 1)) {
+                        continue;
+                    }
 
-                Node neighbor = new Node(newI, newJ, current, current.g + 1, calHeuristic(newI, newJ));
-
-                if (closedSet.contains(neighbor) || (openSet.contains(neighbor) && neighbor.g >= current.g + 1)) {
-                    continue;
-                }
-
-                cameFrom.put(neighbor, current);
-                visited.add(neighbor);
-                if (!openSet.contains(neighbor)) {
+                    neighbor.setOpen(true);
+                    cameFrom.put(neighbor, current);
                     openSet.add(neighbor);
+
+                    //System.out.println("Neighbor Node (" + neighbor.i + ", " + neighbor.j + ") - g: " + neighbor.g + ", f: " + neighbor.f());
                 }
             }
         }
 
-        return RaceTrackGame.DIRECTIONS[0]; // Stay if no path to goal
+        return RaceTrackGame.DIRECTIONS[0]; // Ha nincs út, válassz egy alapértelmezett irányt
     }
+
+    private void printCostsTable() {
+        // Temporary variables to simulate the state and other necessary data
+        int currentRow = 0; // Example starting row
+        int currentColumn = 0; // Example starting column
+        int currentSpeedI = 0; // Example speed I component
+        int currentSpeedJ = 0; // Example speed J component
+
+        System.out.println("f-costs Table:");
+        for (int i = 0; i < track.length; i++) {
+            for (int j = 0; j < track[i].length; j++) {
+                Node node = new Node(i, j, null, calculateGCost(i, j, currentRow, currentColumn, currentSpeedI, currentSpeedJ), calculateHeuristic(i, j));
+                System.out.print(node.f() + "\t");
+            }
+            System.out.println();
+        }
+
+        System.out.println("\ng-costs Table:");
+        for (int i = 0; i < track.length; i++) {
+            for (int j = 0; j < track[i].length; j++) {
+                Node node = new Node(i, j, null, calculateGCost(i, j, currentRow, currentColumn, currentSpeedI, currentSpeedJ), calculateHeuristic(i, j));
+                System.out.print(node.g + "\t");
+            }
+            System.out.println();
+        }
+    }
+
+    private int calculateGCost(int i, int j, int currentRow, int currentColumn, int currentSpeedI, int currentSpeedJ) {
+        // Implement the logic to calculate the g-cost from the starting position to (i, j)
+        // This could be a simple distance calculation or more complex based on your game's rules
+        // For a basic example, you could use the Manhattan distance:
+        return Math.abs(i - currentRow) + Math.abs(j - currentColumn);
+    }
+
+
+
 }
