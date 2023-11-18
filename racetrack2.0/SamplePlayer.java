@@ -9,14 +9,13 @@ public class SamplePlayer extends RaceTrackPlayer {
     private int[][] track;
     private int[] goalPosition;
     private Set<Node> visited;
+    private static final int SPEED = 1; // Consistent speed
 
     public SamplePlayer(PlayerState state, Random random, int[][] track, Coin[] coins, int color) {
         super(state, random, track, coins, color);
         this.track = track;
         this.goalPosition = findGoalPosition();
         this.visited = new HashSet<>();
-        printHeuristicTable();
-        printCostsTable();
     }
 
     private class Node {
@@ -33,31 +32,9 @@ public class SamplePlayer extends RaceTrackPlayer {
             this.h = h;
         }
 
-        private void printCostsTable() {
-            for (int i = 0; i < track.length; i++) {
-                for (int j = 0; j < track[i].length; j++) {
-                    System.out.print(f() + "-" + g);
-                }
-                System.out.println();
-            }
-        }
-
         int f() {
             return g + h;
         }
-
-        void setOpen(boolean isOpen) {
-            this.open = isOpen;
-        }
-
-        void setChecked(boolean isChecked) {
-            this.checked = isChecked;
-        }
-
-        void setSolid(boolean isSolid) {
-            this.solid = isSolid;
-        }
-
 
         @Override
         public boolean equals(Object obj) {
@@ -121,62 +98,43 @@ public class SamplePlayer extends RaceTrackPlayer {
     }
 
 
+
     @Override
     public Direction getDirection(long timeBudget) {
-        int currentRow = state.i;
-        int currentColumn = state.j;
-        int currentSpeedI = state.vi;  // A jelenlegi sebességvektor i komponense
-        int currentSpeedJ = state.vj;  // A jelenlegi sebességvektor j komponense
-
+        Node startNode = new Node(state.i, state.j, null, 0, calculateHeuristic(state.i, state.j));
         PriorityQueue<Node> openSet = new PriorityQueue<>(Comparator.comparingInt(Node::f));
-        Map<Node, Node> cameFrom = new HashMap<>();
-        Node start = new Node(currentRow, currentColumn, null, 0, calculateHeuristic(currentRow, currentColumn));
-        start.setOpen(true);
-        openSet.add(start);
-        visited.clear();
+        Set<Node> closedSet = new HashSet<>();
+        openSet.add(startNode);
 
         while (!openSet.isEmpty()) {
-            Node current = openSet.poll();
-
-            if (visited.contains(current)) {
+            Node currentNode = openSet.poll();
+            if (closedSet.contains(currentNode)) {
                 continue;
             }
-            current.setChecked(true);
-            visited.add(current);
+            closedSet.add(currentNode);
 
-            //System.out.println("Current Node (" + current.i + ", " + current.j + ") - g: " + current.g + ", f: " + current.f());
-
-
-            if (isGoal(current)) {
-                return reconstructPath(current);
+            if (isGoal(currentNode)) {
+                return reconstructPath(currentNode);
             }
 
-            for (int di = -1; di <= 1; di++) {
-                for (int dj = -1; dj <= 1; dj++) {
-                    int nextSpeedI = currentSpeedI + di;
-                    int nextSpeedJ = currentSpeedJ + dj;
-                    int nextRow = current.i + nextSpeedI;
-                    int nextColumn = current.j + nextSpeedJ;
+            for (int di = -SPEED; di <= SPEED; di++) {
+                for (int dj = -SPEED; dj <= SPEED; dj++) {
+                    int nextRow = currentNode.i + di;
+                    int nextColumn = currentNode.j + dj;
 
                     if (!canMoveTo(nextRow, nextColumn)) {
                         continue;
                     }
 
-                    Node neighbor = new Node(nextRow, nextColumn, current, current.g + 1, calculateHeuristic(nextRow, nextColumn));
-                    if (visited.contains(neighbor) || (cameFrom.containsKey(neighbor) && neighbor.g >= current.g + 1)) {
-                        continue;
+                    Node neighbor = new Node(nextRow, nextColumn, currentNode, currentNode.g + 1, calculateHeuristic(nextRow, nextColumn));
+                    if (!closedSet.contains(neighbor)) {
+                        openSet.add(neighbor);
                     }
-
-                    neighbor.setOpen(true);
-                    cameFrom.put(neighbor, current);
-                    openSet.add(neighbor);
-
-                    //System.out.println("Neighbor Node (" + neighbor.i + ", " + neighbor.j + ") - g: " + neighbor.g + ", f: " + neighbor.f());
                 }
             }
         }
 
-        return RaceTrackGame.DIRECTIONS[0]; // Ha nincs út, válassz egy alapértelmezett irányt
+        return RaceTrackGame.DIRECTIONS[0]; // Default direction if path not found
     }
 
     private void printCostsTable() {
