@@ -11,6 +11,12 @@ public class SamplePlayer extends RaceTrackPlayer {
     private Set<Node> visited;
     private static final int SPEED = 1; // Consistent speed
 
+    private Direction DOWN = RaceTrackGame.DIRECTIONS[7];
+    private Direction LEFT = RaceTrackGame.DIRECTIONS[1];
+    private Direction RIGHT = RaceTrackGame.DIRECTIONS[5];
+    private Direction UP = RaceTrackGame.DIRECTIONS[3];
+    private Direction STAY = RaceTrackGame.DIRECTIONS[0];
+
     public SamplePlayer(PlayerState state, Random random, int[][] track, Coin[] coins, int color) {
         super(state, random, track, coins, color);
         this.track = track;
@@ -18,38 +24,10 @@ public class SamplePlayer extends RaceTrackPlayer {
         this.visited = new HashSet<>();
     }
 
-    private class Node {
-        int i, j;
-        Node parent;
-        int g, h;
-        boolean open, checked, solid;
-
-        Node(int i, int j, Node parent, int g, int h) {
-            this.i = i;
-            this.j = j;
-            this.parent = parent;
-            this.g = g;
-            this.h = h;
-        }
-
-        int f() {
-            return g + h;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (obj == null || getClass() != obj.getClass()) return false;
-            Node node = (Node) obj;
-            return i == node.i && j == node.j;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(i, j);
-        }
-    }
-
+    /**
+     * A cél poziciójának keresése
+     * @return A cél pozíció koordinátái
+     */
     private int[] findGoalPosition() {
         for (int i = 0; i < track.length; i++) {
             for (int j = 0; j < track[i].length; j++) {
@@ -61,10 +39,20 @@ public class SamplePlayer extends RaceTrackPlayer {
         return null;
     }
 
+    /**
+     * Ellenőrzi az adott mező helyzete megegyezik-e a céllal
+     * @param a mező
+     * @return a mező megegyezik-e a célmezővel
+     */
     private boolean isGoal(Node node) {
         return node.i == goalPosition[0] && node.j == goalPosition[1];
     }
 
+    /**
+     * Rekonstruálja az utat
+     * @param célmező
+     * @return ha üres az útvonal egy helyben marad, ha nem üres, az útvonal első elemét adja vissza
+     */
     private Direction reconstructPath(Node goal) {
         LinkedList<Direction> path = new LinkedList<>();
         Node current = goal;
@@ -72,9 +60,15 @@ public class SamplePlayer extends RaceTrackPlayer {
             path.addFirst(new Direction(current.i - current.parent.i, current.j - current.parent.j));
             current = current.parent;
         }
-        return path.isEmpty() ? RaceTrackGame.DIRECTIONS[0] : path.getFirst();
+        return path.isEmpty() ? STAY : path.getFirst();
     }
 
+    /**
+     * Ellenőrzi, hogy az adott koordinátájú mező léphető-e
+     * @param i - 1. koordináta
+     * @param j - 2. koordináta
+     * @return ha a mezőn fal van, vagy a pályán kívüli mező lenne hamisat ad vissza, ha léphető igazat
+     */
     private boolean canMoveTo(int i, int j) {
         if (i < 0 || i >= track.length || j < 0 || j >= track[0].length) {
             return false;
@@ -82,36 +76,29 @@ public class SamplePlayer extends RaceTrackPlayer {
         return (track[i][j] & RaceTrackGame.WALL) == 0;
     }
 
-    private int calculateHeuristic(int i, int j) {
+    /**
+     * Kiszámolja a megadott koordináták alapján a mező milyen távolságra van a célponttól
+     * @param i - 1. koordináta
+     * @param j - 2. koordináta
+     * @return heurisztika értéke
+     */
+    private int calcHeuristic(int i, int j) {
         return Math.abs(i - goalPosition[0]) + Math.abs(j - goalPosition[1]);
     }
 
-    // ... [A korábbi osztálydefiníciók]
-
-    private void printHeuristicTable() {
-        for (int i = 0; i < track.length; i++) {
-            for (int j = 0; j < track[i].length; j++) {
-                System.out.print(calculateHeuristic(i, j) + "\t");
-            }
-            System.out.println();
-        }
-    }
-
-
-
     @Override
     public Direction getDirection(long timeBudget) {
-        Node startNode = new Node(state.i, state.j, null, 0, calculateHeuristic(state.i, state.j));
-        PriorityQueue<Node> openSet = new PriorityQueue<>(Comparator.comparingInt(Node::f));
-        Set<Node> closedSet = new HashSet<>();
-        openSet.add(startNode);
+        Node startNode = new Node(state.i, state.j, null, 0, calcHeuristic(state.i, state.j));
+        PriorityQueue<Node> openNodes = new PriorityQueue<>(Comparator.comparingInt(Node::f));
+        Set<Node> closedNodes = new HashSet<>();
+        openNodes.add(startNode);
 
-        while (!openSet.isEmpty()) {
-            Node currentNode = openSet.poll();
-            if (closedSet.contains(currentNode)) {
+        while (!openNodes.isEmpty()) {
+            Node currentNode = openNodes.poll();
+            if (closedNodes.contains(currentNode)) {
                 continue;
             }
-            closedSet.add(currentNode);
+            closedNodes.add(currentNode);
 
             if (isGoal(currentNode)) {
                 return reconstructPath(currentNode);
@@ -126,18 +113,55 @@ public class SamplePlayer extends RaceTrackPlayer {
                         continue;
                     }
 
-                    Node neighbor = new Node(nextRow, nextColumn, currentNode, currentNode.g + 1, calculateHeuristic(nextRow, nextColumn));
-                    if (!closedSet.contains(neighbor)) {
-                        openSet.add(neighbor);
+                    Node neighbor = new Node(nextRow, nextColumn, currentNode, currentNode.g + 1, calcHeuristic(nextRow, nextColumn));
+                    if (!closedNodes.contains(neighbor)) {
+                        openNodes.add(neighbor);
                     }
                 }
             }
         }
-
-        return RaceTrackGame.DIRECTIONS[0]; // Default direction if path not found
+        return STAY;
     }
 
-    private void printCostsTable() {
+    /**
+     * Node osztály
+     */
+    private class Node {
+        int i, j;
+        Node parent;
+        int g, h;
+
+        Node(int i, int j, Node parent, int g, int h) {
+            this.i = i;
+            this.j = j;
+            this.parent = parent;
+            this.g = g;
+            this.h = h;
+        }
+
+        /**
+         * Megtett út (g) és célpontig vezető út (h) költségének összegének kiszámízása
+         * @return f = g + h
+         */
+        int f() {
+            return g + h;
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (this == object) return true;
+            if (object == null || getClass() != object.getClass()) return false;
+            Node node = (Node) object;
+            return i == node.i && j == node.j;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(i, j);
+        }
+    }
+
+   /* private void printCostsTable() {
         // Temporary variables to simulate the state and other necessary data
         int currentRow = 0; // Example starting row
         int currentColumn = 0; // Example starting column
@@ -147,7 +171,7 @@ public class SamplePlayer extends RaceTrackPlayer {
         System.out.println("f-costs Table:");
         for (int i = 0; i < track.length; i++) {
             for (int j = 0; j < track[i].length; j++) {
-                Node node = new Node(i, j, null, calculateGCost(i, j, currentRow, currentColumn, currentSpeedI, currentSpeedJ), calculateHeuristic(i, j));
+                Node node = new Node(i, j, null, calculateGCost(i, j, currentRow, currentColumn, currentSpeedI, currentSpeedJ), calcHeuristic(i, j));
                 System.out.print(node.f() + "\t");
             }
             System.out.println();
@@ -156,12 +180,13 @@ public class SamplePlayer extends RaceTrackPlayer {
         System.out.println("\ng-costs Table:");
         for (int i = 0; i < track.length; i++) {
             for (int j = 0; j < track[i].length; j++) {
-                Node node = new Node(i, j, null, calculateGCost(i, j, currentRow, currentColumn, currentSpeedI, currentSpeedJ), calculateHeuristic(i, j));
+                Node node = new Node(i, j, null, calculateGCost(i, j, currentRow, currentColumn, currentSpeedI, currentSpeedJ), calcHeuristic(i, j));
                 System.out.print(node.g + "\t");
             }
             System.out.println();
         }
     }
+
 
     private int calculateGCost(int i, int j, int currentRow, int currentColumn, int currentSpeedI, int currentSpeedJ) {
         // Implement the logic to calculate the g-cost from the starting position to (i, j)
@@ -170,6 +195,6 @@ public class SamplePlayer extends RaceTrackPlayer {
         return Math.abs(i - currentRow) + Math.abs(j - currentColumn);
     }
 
-
+*/
 
 }
