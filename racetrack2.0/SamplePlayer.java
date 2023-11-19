@@ -5,13 +5,16 @@ import game.racetrack.RaceTrackGame;
 import game.racetrack.RaceTrackPlayer;
 import game.racetrack.utils.Coin;
 import game.racetrack.utils.PlayerState;
-import java.util.Random;import java.util.*;
+import java.util.*;
 
 public class SamplePlayer extends RaceTrackPlayer {
     private int[][] track;
     private int[] goalPosition;
     private static final int SPEED = 1;
 
+    /**
+     * Mozgasiranyok
+     */
     private Direction DOWN = RaceTrackGame.DIRECTIONS[7];
     private Direction LEFT = RaceTrackGame.DIRECTIONS[1];
     private Direction RIGHT = RaceTrackGame.DIRECTIONS[5];
@@ -26,10 +29,10 @@ public class SamplePlayer extends RaceTrackPlayer {
 
 
     /**
-     * Ellenőrzi, hogy az adott koordinátájú mező léphető-e
-     * @param i - 1. koordináta
-     * @param j - 2. koordináta
-     * @return ha a mezőn fal van, vagy a pályán kívüli mező lenne hamisat ad vissza, ha léphető igazat
+     * Ellenorzi, hogy az adott koordinataju mezo lepheto-e
+     * @param i - 1. koordinata
+     * @param j - 2. koordinata
+     * @return ha a mezőn fal van, vagy a palyan kivuli mezo lenne hamisat ad vissza, ha lephető igazat
      */
     private boolean canMoveTo(int i, int j) {
         if (i < 0 || i >= track.length) {
@@ -42,8 +45,8 @@ public class SamplePlayer extends RaceTrackPlayer {
     }
 
     /**
-     * A cél poziciójának keresése
-     * @return A cél pozíció koordinátái
+     * A cel poziciojanak keresese
+     * @return A celpozicio koordinatai
      */
     private int[] findGoalPosition() {
         for (int i = 0; i < track.length; i++) {
@@ -57,9 +60,9 @@ public class SamplePlayer extends RaceTrackPlayer {
     }
 
     /**
-     * Ellenőrzi az adott mező helyzete megegyezik-e a céllal
-     * @param a mező
-     * @return a mező megegyezik-e a célmezővel
+     * Ellenorzi az adott mezo helyzete megegyezik-e a cellal
+     * @param a mezo
+     * @return a mezo megegyezik-e a celmezovel
      */
     private boolean isGoal(Node node) {
         return node.i == goalPosition[0] && node.j == goalPosition[1];
@@ -68,10 +71,10 @@ public class SamplePlayer extends RaceTrackPlayer {
 
 
     /**
-     * Kiszámolja a megadott koordináták alapján a mező milyen távolságra van a célponttól
-     * @param i - 1. koordináta
-     * @param j - 2. koordináta
-     * @return heurisztika értéke
+     * Kiszamolja a megadott koordinatak alapjan a mezo milyen tavolsagra van a celponttol
+     * @param i - 1. koordinata
+     * @param j - 2. koordinata
+     * @return heurisztika erteke
      */
     private int calcHeuristic(int i, int j) {
         return Math.abs(i - goalPosition[0]) + Math.abs(j - goalPosition[1]);
@@ -79,9 +82,9 @@ public class SamplePlayer extends RaceTrackPlayer {
 
 
     /**
-     * Rekonstruálja az utat, visszaköveti az utat kezdőponttól, célpontig
-     * @param célmező
-     * @return ha üres az útvonal egy helyben marad, ha nem üres, az útvonal első elemét adja vissza
+     * Rekonstrualja az utat, visszakoveti az utat kezdoponttol, celpontig
+     * @param celmezo
+     * @return ha ures az utvonal egy helyben marad, ha nem ures, az utvonal elso elemet adja vissza
      */
     private Direction reconstructRoute(Node goal) {
         LinkedList<Direction> route = new LinkedList<>();
@@ -95,9 +98,9 @@ public class SamplePlayer extends RaceTrackPlayer {
 
 
     /**
-     * Kiszámítja a következő lépést
+     * Kiszamítja a kovetkezo lepest
      * @param timeBudget
-     * @return A következő lépéssel tér vissza
+     * @return A kovetkezo lepessel ter vissza
      */
     @Override
     public Direction getDirection(long timeBudget) {
@@ -137,7 +140,7 @@ public class SamplePlayer extends RaceTrackPlayer {
     }
 
     /**
-     * Node osztály
+     * Node osztaly
      */
     private class Node {
         int i, j;
@@ -153,7 +156,7 @@ public class SamplePlayer extends RaceTrackPlayer {
         }
 
         /**
-         * Megtett út (g) és célpontig vezető út (h) költségének összegének kiszámízása
+         * Megtett ut (g) és celpontig vezeto ut (h) koltsegenek osszegenek kiszamitasa
          * @return f = g + h
          */
         int f() {
@@ -161,11 +164,11 @@ public class SamplePlayer extends RaceTrackPlayer {
         }
 
         /**
-         * Ellenőrzi, hogy a két Node objektum egyenlő-e
-         * @param object
-         * @return Összehasonlítja a két Node object i és j koordinátáit,
-         *  ellenőrzi, hogy a paraméterben kapott object nem null és azonos osztályú-e, mint a Node
-         *  az object önmagával egyezik-e
+         * Ellenorzi, hogy a ket Node objektum egyenlo-e
+         * @param objekt
+         * @return osszehasonlítja a ket Node objekt i és j koordinatait,
+         *  ellenorzi, hogy a parameterben kapott object nem null és azonos osztalyu-e, mint a Node,
+         *  az object onmagával egyezik-e
          */
         @Override
         public boolean equals(Object object) {
@@ -176,8 +179,8 @@ public class SamplePlayer extends RaceTrackPlayer {
         }
 
         /**
-         * Egész számot generál, ami az objektum tartalmát mutatja
-         * @return generál egy számot, ami az i és j értékeit veszi figyelembe
+         * Egesz szamot general, ami az objektum tartalmat mutatja
+         * @return general egy szamot, ami az i és j ertekeit veszi figyelembe
          */
         @Override
         public int hashCode() {
