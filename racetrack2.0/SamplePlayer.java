@@ -174,14 +174,25 @@ public class SamplePlayer extends RaceTrackPlayer {
         return STAY;
     }
 
+    /**
+     * A felvett ermetol kiszamitja az utat a celig
+     * @param coinNode
+     * @return uj utvonal a celig
+     */
     private Direction restartPathFromCoin(Node coinNode) {
-        state.i = coinNode.i;  // Frissítjük a játékos pozícióját az érme pozíciójára
+        state.i = coinNode.i;
         state.j = coinNode.j;
 
         Node startNode = new Node(state.i, state.j, null, 0, calcHeuristic(state.i, state.j));
-        return computePathToGoal(startNode);  // Új útvonal számítása a cél felé
+        return computePathToGoal(startNode);
     }
 
+
+    /**
+     * A celhoz vezeto ut kiszamitasa
+     * @param timeBudget
+     * @return utvonal a celig
+     */
     @Override
     public Direction getDirection(long timeBudget) {
         Node startNode = new Node(state.i, state.j, null, 0, calcHeuristic(state.i, state.j));
@@ -194,6 +205,10 @@ public class SamplePlayer extends RaceTrackPlayer {
     }
 
 
+    /**
+     * megkeresi a legkozelebbi ermet
+     * @return a legkozelebbi erme
+     */
     private Coin findNearestCoin() {
         Coin nearest = null;
         int minDistance = Integer.MAX_VALUE;
@@ -208,6 +223,13 @@ public class SamplePlayer extends RaceTrackPlayer {
         }
         return nearest;
     }
+
+    /**
+     * kiszamitja startponttol a celpontig a legrovidebb utat
+     * @param startNode
+     * @param coin
+     * @return a megfelelo irannyal
+     */
     private Direction computePathToCoin(Node startNode, Coin coin) {
         PriorityQueue<Node> openNodes = new PriorityQueue<>((node1, node2) -> node1.f() - node2.f());
         Set<Node> closedNodes = new HashSet<>();
@@ -250,13 +272,23 @@ public class SamplePlayer extends RaceTrackPlayer {
     }
 
 
+    /**
+     * Az erme tavolsagat szamitja ki a jelenlegi poziciotol, es ellenorzi ez kisebb tav-e mint a megadott tav
+     * @param coin
+     * @param distance
+     * @return kozelebb van-e az erme, mint a distance erteke
+     */
     private boolean isCoinWithinDistance(Coin coin, int distance) {
         return Math.abs(coin.i - state.i) + Math.abs(coin.j - state.j) <= distance;
     }
 
 
-
-
+    /**
+     *
+     * @param coin
+     * @param startNode
+     * @return
+     */
     private int getPathLengthToCoin(Coin coin, Node startNode) {
         PriorityQueue<Node> openNodes = new PriorityQueue<>((node1, node2) -> node1.f() - node2.f());
         Set<Node> closedNodes = new HashSet<>();
@@ -293,15 +325,24 @@ public class SamplePlayer extends RaceTrackPlayer {
         return Integer.MAX_VALUE; // Ha nem talál útvonalat, egy nagyon nagy számot ad vissza
     }
 
-
+    /**
+     * ha felvette az ermet, kiszamitja az uj utat a celug
+     * @param coinNode
+     * @return uj utvonal a celig
+     */
     private Direction restartPathAfterCoin(Node coinNode) {
-        state.i = coinNode.i;  // Frissítjük a játékos pozícióját az érme pozíciójára
+        state.i = coinNode.i;
         state.j = coinNode.j;
 
         Node startNode = new Node(state.i, state.j, null, 0, calcHeuristic(state.i, state.j));
-        return computePathToGoal(startNode);  // Új útvonal számítása a cél felé
+        return computePathToGoal(startNode);
     }
 
+    /**
+     * kiszamolja a legrovidebb utat a celig
+     * @param startNode
+     * @return a megfeleo irany
+     */
     private Direction computePathToFinish(Node startNode) {
         PriorityQueue<Node> openNodes = new PriorityQueue<>((node1, node2) -> node1.f() - node2.f());
         Set<Node> closedNodes = new HashSet<>();
