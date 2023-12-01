@@ -11,7 +11,9 @@ public class SamplePlayer extends RaceTrackPlayer {
     private int[][] track;
     private int[] goalPosition;
     private static final int SPEED = 1;
+    private Coin[] coins;
 
+    private Set<Coin> collectedCoins = new HashSet<>();
     /**
      * Mozgasiranyok
      */
@@ -24,7 +26,17 @@ public class SamplePlayer extends RaceTrackPlayer {
     public SamplePlayer(PlayerState state, Random random, int[][] track, Coin[] coins, int color) {
         super(state, random, track, coins, color);
         this.track = track;
+        this.coins = coins;
         this.goalPosition = findGoalPosition();
+    }
+    private boolean isCoinAt(int i, int j) {
+        for (Coin coin : coins) {
+            // Feltételezve, hogy a Coin osztálynak van getPositionX() és getPositionY() metódusa
+            if (coin.i == i && coin.j == j) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -80,6 +92,14 @@ public class SamplePlayer extends RaceTrackPlayer {
         return Math.abs(i - goalPosition[0]) + Math.abs(j - goalPosition[1]);
     }
 
+    // Külön heurisztika az érmékhez
+    private int calcHeuristicToCoin(int i, int j, Coin nearestCoin) {
+        if (nearestCoin != null) {
+            return Math.abs(i - nearestCoin.i) + Math.abs(j - nearestCoin.j);
+        }
+        return Integer.MAX_VALUE; // Ha nincs érme, a heurisztika értéke legyen nagyon magas
+    }
+
 
     /**
      * Rekonstrualja az utat, visszakoveti az utat kezdoponttol, celpontig
@@ -102,9 +122,20 @@ public class SamplePlayer extends RaceTrackPlayer {
      * @param timeBudget
      * @return A kovetkezo lepessel ter vissza
      */
-    @Override
-    public Direction getDirection(long timeBudget) {
-        Node startNode = new Node(state.i, state.j, null, 0, calcHeuristic(state.i, state.j));
+
+    private Direction computePathToGoal(Node startNode) {
+        Coin nearestCoin = findNearestCoin();
+
+        // Ha van érme a közelben, ellenőrizzük az útvonalat
+        if (nearestCoin != null) {
+            int pathLengthToCoin = getPathLengthToCoin(nearestCoin, startNode);
+            // Ellenőrizzük, hogy a coin felé vezető út rövidebb-e, mint a coin értéke kétszerese
+            if (pathLengthToCoin < 2 * nearestCoin.value) {
+                // Frissítjük a startNode heurisztikáját az érme felé
+                startNode = new Node(state.i, state.j, null, 0, calcHeuristicToCoin(state.i, state.j, nearestCoin));
+            }
+        }
+
         PriorityQueue<Node> openNodes = new PriorityQueue<>((node1, node2) -> node1.f() - node2.f());
         Set<Node> closedNodes = new HashSet<>();
         openNodes.add(startNode);
@@ -116,12 +147,14 @@ public class SamplePlayer extends RaceTrackPlayer {
             }
             closedNodes.add(currentNode);
 
-            if (isGoal(currentNode)) {
+            // Ha elértük a célt vagy az érmét
+            if (nearestCoin != null && currentNode.i == nearestCoin.i && currentNode.j == nearestCoin.j ||
+                    isGoal(currentNode)) {
                 return reconstructRoute(currentNode);
             }
 
-            for (int vi = SPEED; vi >= -SPEED; vi--) {
-                for (int vj = SPEED; vj >= -SPEED; vj--) {
+            for (int vi = -SPEED; vi <= SPEED; vi++) {
+                for (int vj = -SPEED; vj <= SPEED; vj++) {
                     int nextRow = currentNode.i + vi;
                     int nextColumn = currentNode.j + vj;
 
@@ -129,14 +162,182 @@ public class SamplePlayer extends RaceTrackPlayer {
                         continue;
                     }
 
-                    Node neighbor = new Node(nextRow, nextColumn, currentNode, currentNode.g + 1, calcHeuristic(nextRow, nextColumn));
-                    if (!closedNodes.contains(neighbor)) {
+                    int newCost = currentNode.g + 1;
+                    Node neighbor = new Node(nextRow, nextColumn, currentNode, newCost,
+                            nearestCoin != null ? calcHeuristicToCoin(nextRow, nextColumn, nearestCoin) : calcHeuristic(nextRow, nextColumn));
+                    if (!closedNodes.contains(neighbor) && !openNodes.contains(neighbor)) {
                         openNodes.add(neighbor);
                     }
                 }
             }
         }
         return STAY;
+    }
+
+    private Direction restartPathFromCoin(Node coinNode) {
+        state.i = coinNode.i;  // Frissítjük a játékos pozícióját az érme pozíciójára
+        state.j = coinNode.j;
+
+        Node startNode = new Node(state.i, state.j, null, 0, calcHeuristic(state.i, state.j));
+        return computePathToGoal(startNode);  // Új útvonal számítása a cél felé
+    }
+
+    @Override
+    public Direction getDirection(long timeBudget) {
+        Node startNode = new Node(state.i, state.j, null, 0, calcHeuristic(state.i, state.j));
+        Coin nearestCoin = findNearestCoin();
+
+        if (nearestCoin != null && isCoinWithinDistance(nearestCoin, 5) && !collectedCoins.contains(nearestCoin)) {
+            return computePathToCoin(startNode, nearestCoin);
+        }
+        return computePathToGoal(startNode);
+    }
+
+
+    private Coin findNearestCoin() {
+        Coin nearest = null;
+        int minDistance = Integer.MAX_VALUE;
+        for (Coin coin : coins) {
+            if (!collectedCoins.contains(coin)) {
+                int distance = Math.abs(coin.i - state.i) + Math.abs(coin.j - state.j);
+                if (distance < minDistance) {
+                    nearest = coin;
+                    minDistance = distance;
+                }
+            }
+        }
+        return nearest;
+    }
+    private Direction computePathToCoin(Node startNode, Coin coin) {
+        PriorityQueue<Node> openNodes = new PriorityQueue<>((node1, node2) -> node1.f() - node2.f());
+        Set<Node> closedNodes = new HashSet<>();
+        openNodes.add(startNode);
+
+
+
+        while (!openNodes.isEmpty()) {
+            Node currentNode = openNodes.poll();
+            if (closedNodes.contains(currentNode)) {
+                continue;
+            }
+            closedNodes.add(currentNode);
+
+            // Ha elérjük a coin pozícióját
+            if (currentNode.i == coin.i && currentNode.j == coin.j) {
+                collectedCoins.add(coin); // Érme hozzáadása a gyűjtött érmékhez
+                return reconstructRoute(currentNode);
+            }
+
+            // Szomszédos mezők vizsgálata
+            for (int vi = -SPEED; vi <= SPEED; vi++) {
+                for (int vj = -SPEED; vj <= SPEED; vj++) {
+                    int nextRow = currentNode.i + vi;
+                    int nextColumn = currentNode.j + vj;
+
+                    // Ellenőrizzük, hogy léphetünk-e erre a mezőre
+                    if (!canMoveTo(nextRow, nextColumn)) {
+                        continue;
+                    }
+
+                    Node neighbor = new Node(nextRow, nextColumn, currentNode, currentNode.g + 1, calcHeuristicToCoin(nextRow, nextColumn, coin));
+                    if (!closedNodes.contains(neighbor) && !openNodes.contains(neighbor)) {
+                        openNodes.add(neighbor);
+                    }
+                }
+            }
+        }
+        return STAY; // Ha nem talált útvonalat
+    }
+
+
+    private boolean isCoinWithinDistance(Coin coin, int distance) {
+        return Math.abs(coin.i - state.i) + Math.abs(coin.j - state.j) <= distance;
+    }
+
+
+
+
+    private int getPathLengthToCoin(Coin coin, Node startNode) {
+        PriorityQueue<Node> openNodes = new PriorityQueue<>((node1, node2) -> node1.f() - node2.f());
+        Set<Node> closedNodes = new HashSet<>();
+        openNodes.add(startNode);
+
+        while (!openNodes.isEmpty()) {
+            Node currentNode = openNodes.poll();
+            if (closedNodes.contains(currentNode)) {
+                continue;
+            }
+            closedNodes.add(currentNode);
+
+            // Ha elérjük a coin pozícióját, visszaadjuk az útvonal hosszát
+            if (currentNode.i == coin.i && currentNode.j == coin.j) {
+                return currentNode.g;
+            }
+
+            for (int vi = -SPEED; vi <= SPEED; vi++) {
+                for (int vj = -SPEED; vj <= SPEED; vj++) {
+                    int nextRow = currentNode.i + vi;
+                    int nextColumn = currentNode.j + vj;
+
+                    if (!canMoveTo(nextRow, nextColumn)) {
+                        continue;
+                    }
+
+                    Node neighbor = new Node(nextRow, nextColumn, currentNode, currentNode.g + 1, calcHeuristicToCoin(nextRow, nextColumn, coin));
+                    if (!closedNodes.contains(neighbor) && !openNodes.contains(neighbor)) {
+                        openNodes.add(neighbor);
+                    }
+                }
+            }
+        }
+        return Integer.MAX_VALUE; // Ha nem talál útvonalat, egy nagyon nagy számot ad vissza
+    }
+
+
+    private Direction restartPathAfterCoin(Node coinNode) {
+        state.i = coinNode.i;  // Frissítjük a játékos pozícióját az érme pozíciójára
+        state.j = coinNode.j;
+
+        Node startNode = new Node(state.i, state.j, null, 0, calcHeuristic(state.i, state.j));
+        return computePathToGoal(startNode);  // Új útvonal számítása a cél felé
+    }
+
+    private Direction computePathToFinish(Node startNode) {
+        PriorityQueue<Node> openNodes = new PriorityQueue<>((node1, node2) -> node1.f() - node2.f());
+        Set<Node> closedNodes = new HashSet<>();
+        openNodes.add(startNode);
+
+        while (!openNodes.isEmpty()) {
+            Node currentNode = openNodes.poll();
+            if (closedNodes.contains(currentNode)) {
+                continue;
+            }
+            closedNodes.add(currentNode);
+
+            // Ha elérjük a célt
+            if (isGoal(currentNode)) {
+                return reconstructRoute(currentNode);
+            }
+
+            // Szomszédos mezők vizsgálata
+            for (int vi = -SPEED; vi <= SPEED; vi++) {
+                for (int vj = -SPEED; vj <= SPEED; vj++) {
+                    int nextRow = currentNode.i + vi;
+                    int nextColumn = currentNode.j + vj;
+
+                    // Ellenőrizzük, hogy léphetünk-e erre a mezőre
+                    if (!canMoveTo(nextRow, nextColumn)) {
+                        continue;
+                    }
+
+                    Node neighbor = new Node(nextRow, nextColumn, currentNode, currentNode.g + 1, calcHeuristic(nextRow, nextColumn));
+                    if (!closedNodes.contains(neighbor) && !openNodes.contains(neighbor)) {
+                        openNodes.add(neighbor);
+                    }
+                }
+            }
+        }
+        return STAY; // Ha nem talált útvonalat
     }
 
     /**
