@@ -53,7 +53,10 @@ public class SamplePlayer extends RaceTrackPlayer {
      */
 
     private boolean canMoveTo(int i, int j) {
-        if (i < 0 || i >= track.length || j < 0 || j >= track[0].length) {
+        if (i < 0 || i >= track.length) {
+            return false;
+        }
+        if(j < 0 || j >= track[0].length){
             return false;
         }
         return (track[i][j] & RaceTrackGame.WALL) == 0;
