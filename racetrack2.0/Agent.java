@@ -1,3 +1,5 @@
+///BAnna, Berke.Anna.Vivien@stud.u-szeged.hu
+
 import game.racetrack.Direction;
 import game.racetrack.RaceTrackGame;
 import game.racetrack.RaceTrackPlayer;
