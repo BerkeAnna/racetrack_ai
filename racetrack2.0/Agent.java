@@ -1,19 +1,24 @@
-///BAnna, Berke.Anna.Vivien@stud.u-szeged.hu
-
 import game.racetrack.Direction;
 import game.racetrack.RaceTrackGame;
 import game.racetrack.RaceTrackPlayer;
 import game.racetrack.utils.Coin;
+import game.racetrack.utils.Cell;
+import game.racetrack.utils.PathCell;
 import game.racetrack.utils.PlayerState;
 import java.util.*;
 
-public class SamplePlayer extends RaceTrackPlayer {
+/**
+ * jatekos implementalasa
+ * tartalmazza a jatekos logikajat, utvonal keresest
+ */
+public class Agent extends RaceTrackPlayer {
     private int[][] track;
     private int[] goalPosition;
     private static final int SPEED = 1;
 
+
     /**
-     * Mozgasiranyok
+     * iranyok
      */
     private Direction DOWN = RaceTrackGame.DIRECTIONS[7];
     private Direction LEFT = RaceTrackGame.DIRECTIONS[1];
@@ -21,19 +26,32 @@ public class SamplePlayer extends RaceTrackPlayer {
     private Direction UP = RaceTrackGame.DIRECTIONS[3];
     private Direction STAY = RaceTrackGame.DIRECTIONS[0];
 
-    public SamplePlayer(PlayerState state, Random random, int[][] track, Coin[] coins, int color) {
+    /**
+     * Konstruktor
+     *
+     * @param state - kezdeti jatekos allapot
+     * @param random - veletlenszam-genertor
+     * @param track - a palya
+     * @param coins - ermek tombje, amik a palyan vannak
+     * @param color - szinek
+     */
+    public Agent(PlayerState state, Random random, int[][] track, Coin[] coins, int color) {
         super(state, random, track, coins, color);
         this.track = track;
         this.goalPosition = findGoalPosition();
     }
 
 
+
     /**
      * Ellenorzi, hogy az adott koordinataju mezo lepheto-e
-     * @param i - 1. koordinata
-     * @param j - 2. koordinata
-     * @return ha a mezőn fal van, vagy a palyan kivuli mezo lenne hamisat ad vissza, ha lephető igazat
+     * eloszor ellenorzi, hogy a palyan belul talalhato-e a koordinata
+     * aztan elleorzi, hogy fal van-e a mezon
+     * @param i - 1. koordinata - a mezo soranak indexe
+     * @param j - 2. koordinata -a mezo oszlopanak indexe
+     * @return ha a mezon fal van, vagy a palyan kivuli mezo lenne hamisat ad vissza, ha lepheto igazat
      */
+
     private boolean canMoveTo(int i, int j) {
         if (i < 0 || i >= track.length) {
             return false;
@@ -46,8 +64,10 @@ public class SamplePlayer extends RaceTrackPlayer {
 
     /**
      * A cel poziciojanak keresese
-     * @return A celpozicio koordinatai
+     * @return A cel pozicio koordinatait tarolo egesz szamokból allo tomb.
+     *  *         Ha nincs cel a palyan vagy nem talal, null értékkel tér vissza.
      */
+
     private int[] findGoalPosition() {
         for (int i = 0; i < track.length; i++) {
             for (int j = 0; j < track[i].length; j++) {
@@ -60,35 +80,37 @@ public class SamplePlayer extends RaceTrackPlayer {
     }
 
     /**
-     * Ellenorzi az adott mezo helyzete megegyezik-e a cellal
-     * @param a mezo
-     * @return a mezo megegyezik-e a celmezovel
+     * Ellenőrzi, hogy az adott mezo helyzete megegyezik-e a cellal
+     * @param cell - a vizsgalando cella, amit meg akarunk nezni, hogy azonos-e a cellal
+     * @return logikai valtozo, hogy a cella megegyezik-e a cellal
      */
-    private boolean isGoal(Node node) {
-        return node.i == goalPosition[0] && node.j == goalPosition[1];
+    private boolean isGoal(Cell cell) {
+        return cell.i == goalPosition[0] && cell.j == goalPosition[1];
     }
-
-
-
     /**
      * Kiszamolja a megadott koordinatak alapjan a mezo milyen tavolsagra van a celponttol
-     * @param i - 1. koordinata
-     * @param j - 2. koordinata
-     * @return heurisztika erteke
+     * @param i - 1. koordinata -aktualis mezo sora
+     * @param j - 2. koordinata - aktualis mezo oszlopa
+     * @return heurisztika erteke - abszolut ertek osszege, az i és celmezo sora, a j es celmezo oszlopa
      */
+
     private int calcHeuristic(int i, int j) {
         return Math.abs(i - goalPosition[0]) + Math.abs(j - goalPosition[1]);
     }
 
 
+
     /**
-     * Rekonstrualja az utat, visszakoveti az utat kezdoponttol, celpontig
-     * @param celmezo
+     * Rekonstrualja az utat, visszakoveti az utat a celmezotol a kezdopontig
+     * A metódus a PathCell objektumok parent adatait használja
+     * minden lepest a route-hoz ad hozza
+     * @param celmezo -  cél pozíciója található, célmező PathCell objektum
      * @return ha ures az utvonal egy helyben marad, ha nem ures, az utvonal elso elemet adja vissza
      */
-    private Direction reconstructRoute(Node goal) {
+
+    private Direction reconstructRoute(PathCell goal) {
         LinkedList<Direction> route = new LinkedList<>();
-        Node current = goal;
+        PathCell current = goal;
         while (current.parent != null) {
             route.addFirst(new Direction(current.i - current.parent.i, current.j - current.parent.j));
             current = current.parent;
@@ -97,96 +119,55 @@ public class SamplePlayer extends RaceTrackPlayer {
     }
 
 
+
     /**
-     * Kiszamítja a kovetkezo lepest
+     * Kiszamitja a kovetkezo lepest
+     * Az a* algoritmust haszanlja a legrovidebb ut kiszamitasara
      * @param timeBudget
-     * @return A kovetkezo lepessel ter vissza
+     * @return A kovetkezo lepessel iranyaval ter vissza. Ha nincs megfelelo lepes egy helyben marad
      */
+
     @Override
     public Direction getDirection(long timeBudget) {
-        Node startNode = new Node(state.i, state.j, null, 0, calcHeuristic(state.i, state.j));
-        PriorityQueue<Node> openNodes = new PriorityQueue<>((node1, node2) -> node1.f() - node2.f());
-        Set<Node> closedNodes = new HashSet<>();
-        openNodes.add(startNode);
+        PathCell startCell = new PathCell(state.i, state.j, null);
+        Map<PathCell, Integer> g = new HashMap<>();
+        Map<PathCell, Integer> h = new HashMap<>();
+        g.put(startCell, 0);
+        h.put(startCell, calcHeuristic(startCell.i, startCell.j));
 
-        while (!openNodes.isEmpty()) {
-            Node currentNode = openNodes.poll();
-            if (closedNodes.contains(currentNode)) {
+        PriorityQueue<PathCell> openCells = new PriorityQueue<>((cell1, cell2) -> g.get(cell1) + h.get(cell1) - g.get(cell2) - h.get(cell2));
+        Set<PathCell> closedCells = new HashSet<>();
+        openCells.add(startCell);
+
+        while (!openCells.isEmpty()) {
+            PathCell currentCell = openCells.poll();
+            if (closedCells.contains(currentCell)) {
                 continue;
             }
-            closedNodes.add(currentNode);
+            closedCells.add(currentCell);
 
-            if (isGoal(currentNode)) {
-                return reconstructRoute(currentNode);
+            if (isGoal(currentCell)) {
+                return reconstructRoute(currentCell);
             }
 
             for (int vi = SPEED; vi >= -SPEED; vi--) {
                 for (int vj = SPEED; vj >= -SPEED; vj--) {
-                    int nextRow = currentNode.i + vi;
-                    int nextColumn = currentNode.j + vj;
+                    int nextRow = currentCell.i + vi;
+                    int nextColumn = currentCell.j + vj;
 
                     if (!canMoveTo(nextRow, nextColumn)) {
                         continue;
                     }
 
-                    Node neighbor = new Node(nextRow, nextColumn, currentNode, currentNode.g + 1, calcHeuristic(nextRow, nextColumn));
-                    if (!closedNodes.contains(neighbor)) {
-                        openNodes.add(neighbor);
+                    PathCell neighbor = new PathCell(nextRow, nextColumn, currentCell);
+                    if (!closedCells.contains(neighbor) && !openCells.contains(neighbor)) {
+                        g.put(neighbor, g.get(currentCell) + 1);
+                        h.put(neighbor, calcHeuristic(nextRow, nextColumn));
+                        openCells.add(neighbor);
                     }
                 }
             }
         }
         return STAY;
     }
-
-    /**
-     * Node osztaly
-     */
-    private class Node {
-        int i, j;
-        Node parent;
-        int g, h;
-
-        Node(int i, int j, Node parent, int g, int h) {
-            this.i = i;
-            this.j = j;
-            this.parent = parent;
-            this.g = g;
-            this.h = h;
-        }
-
-        /**
-         * Megtett ut (g) és celpontig vezeto ut (h) koltsegenek osszegenek kiszamitasa
-         * @return f = g + h
-         */
-        int f() {
-            return g + h;
-        }
-
-        /**
-         * Ellenorzi, hogy a ket Node objektum egyenlo-e
-         * @param objekt
-         * @return osszehasonlítja a ket Node objekt i és j koordinatait,
-         *  ellenorzi, hogy a parameterben kapott object nem null és azonos osztalyu-e, mint a Node,
-         *  az object onmagával egyezik-e
-         */
-        @Override
-        public boolean equals(Object object) {
-            if (this == object) { return true; }
-            if (object == null || getClass() != object.getClass()){ return false; }
-            Node node = (Node) object;
-            return i == node.i && j == node.j;
-        }
-
-        /**
-         * Egesz szamot general, ami az objektum tartalmat mutatja
-         * @return general egy szamot, ami az i és j ertekeit veszi figyelembe
-         */
-        @Override
-        public int hashCode() {
-            return Objects.hash(i, j);
-        }
-    }
-
-
 }
