@@ -44,11 +44,11 @@ public class SamplePlayer extends RaceTrackPlayer {
     }
 
     private boolean isGoal(Cell cell) {
-        return cell.same(goalPosition);
+        return cell.equals(goalPosition);
     }
 
-    private int calcHeuristic(int i, int j) {
-        return Math.abs(i - goalPosition.i) + Math.abs(j - goalPosition.j);
+    private int calcHeuristic(Cell cell) {
+        return Math.abs(cell.i - goalPosition.i) + Math.abs(cell.j - goalPosition.j);
     }
 
     private Direction reconstructRoute(PathCell goal) {
@@ -67,7 +67,7 @@ public class SamplePlayer extends RaceTrackPlayer {
         Map<PathCell, Integer> gValues = new HashMap<>();
         Map<PathCell, Integer> fValues = new HashMap<>();
         gValues.put(startCell, 0);
-        fValues.put(startCell, calcHeuristic(state.i, state.j));
+        fValues.put(startCell, calcHeuristic(new Cell(state.i, state.j)));
 
         PriorityQueue<PathCell> openCells = new PriorityQueue<>(Comparator.comparing(fValues::get));
         Set<PathCell> closedCells = new HashSet<>();
@@ -98,7 +98,7 @@ public class SamplePlayer extends RaceTrackPlayer {
 
                     if (!closedCells.contains(neighbor) || newG < gValues.getOrDefault(neighbor, Integer.MAX_VALUE)) {
                         gValues.put(neighbor, newG);
-                        fValues.put(neighbor, newG + calcHeuristic(nextRow, nextColumn));
+                        fValues.put(neighbor, newG + calcHeuristic(new Cell(nextRow, nextColumn)));
                         if (!openCells.contains(neighbor)) {
                             openCells.add(neighbor);
                         }
