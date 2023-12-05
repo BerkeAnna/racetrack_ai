@@ -193,6 +193,7 @@ public class SamplePlayer extends RaceTrackPlayer {
                 return reconstructRoute(currentCell);
             }
 
+
             for (int vi = -SPEED; vi <= SPEED; vi++) {
                 for (int vj = -SPEED; vj <= SPEED; vj++) {
                     int nextRow = currentCell.i + vi;
