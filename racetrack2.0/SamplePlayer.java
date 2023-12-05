@@ -145,9 +145,9 @@ public class SamplePlayer extends RaceTrackPlayer {
     public Direction getDirection(long timeBudget) {
         PathCell startCell = new PathCell(state.i, state.j, null);
 
-        System.out.println("------------h-e-r-e------------------");
+       // System.out.println("------------h-e-r-e------------------");
         gValues.put(startCell, 0);
-        System.out.println("------------h-e-r-e----1--------------");
+       // System.out.println("------------h-e-r-e----1--------------");
         hValues.put(startCell, calcHeuristic(state.i, state.j));
 
         System.out.println("------------h-e-r-e-----2-------------");
@@ -159,36 +159,37 @@ public class SamplePlayer extends RaceTrackPlayer {
 */
         PriorityQueue<PathCell> openCells = new PriorityQueue<>((cell1, cell2) -> f(cell1) - f(cell2));
 
-        System.out.println("------------h-e-r-e-----------------3-");
+        //System.out.println("------------h-e-r-e-----------------3-");
         Set<PathCell> closedCells = new HashSet<>();
 
 
-        System.out.println("------------h-e-r-e------------------4");
+       // System.out.println("------------h-e-r-e------------------4");
         openCells.add(startCell);
 
 
-        System.out.println("------------h-e-r-e-----------------5-");
+    //    System.out.println("------------h-e-r-e-----------------5-");
         while (!openCells.isEmpty()) {
 
-            System.out.println("------------h-e-r-e------------------6");
+       //     System.out.println("------------h-e-r-e------------------6");
             PathCell currentCell = openCells.poll();
 
-            System.out.println("------------h-e-r-e------------------7");
+       //     System.out.println("------------h-e-r-e------------------7");
             if (closedCells.contains(currentCell)) {
 
-                System.out.println("------------h-e-r-e------------------8");
+          //      System.out.println("------------h-e-r-e------------------8");
                 continue;
 
             }
 
-            System.out.println("------------h-e-r-e------------------10");
+           // System.out.println("------------h-e-r-e------------------10");
             closedCells.add(currentCell);
 
-            System.out.println("------------h-e-r-e------------------11");
+        //    System.out.println("------------h-e-r-e------------------11");
 
             if (isGoal(currentCell)) {
 
-                System.out.println("------------h-e-r-e------------------");
+        //        System.out.println("------------h-e-r-e------------------");
+        //        System.out.println("------------h-e-r-e------------------");
                 return reconstructRoute(currentCell);
             }
 
