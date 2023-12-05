@@ -60,12 +60,18 @@ public class SamplePlayer extends RaceTrackPlayer {
     }
 
     private Direction reconstructRoute(PathCell goal) {
+
+        System.out.println("------------h-e-r-e------------------13");
         LinkedList<Direction> route = new LinkedList<>();
+
+        System.out.println("------------h-e-r-e------------------14");
         PathCell current = goal;
         while (current.parent != null) {
             route.addFirst(new Direction(current.i - current.parent.i, current.j - current.parent.j));
             current = current.parent;
         }
+
+        System.out.println("------------h-e-r-e------------------15");
         return route.isEmpty() ? STAY : route.getFirst();
     }
 
@@ -138,26 +144,51 @@ public class SamplePlayer extends RaceTrackPlayer {
     @Override
     public Direction getDirection(long timeBudget) {
         PathCell startCell = new PathCell(state.i, state.j, null);
-        gValues.put(startCell, 0);
-        hValues.put(startCell, calcHeuristic(state.i, state.j));
-        Coin nearestCoin = findNearestCoin();
 
-        if (nearestCoin != null && isCoinWithinDistance(nearestCoin, 5) && !collectedCoins.contains(nearestCoin)) {
+        System.out.println("------------h-e-r-e------------------");
+        gValues.put(startCell, 0);
+        System.out.println("------------h-e-r-e----1--------------");
+        hValues.put(startCell, calcHeuristic(state.i, state.j));
+
+        System.out.println("------------h-e-r-e-----2-------------");
+        //Coin nearestCoin = findNearestCoin();
+
+       /* if (nearestCoin != null && isCoinWithinDistance(nearestCoin, 5) && !collectedCoins.contains(nearestCoin)) {
             return computePathToCoin(startCell, nearestCoin);
         }
-
+*/
         PriorityQueue<PathCell> openCells = new PriorityQueue<>((cell1, cell2) -> f(cell1) - f(cell2));
+
+        System.out.println("------------h-e-r-e-----------------3-");
         Set<PathCell> closedCells = new HashSet<>();
+
+
+        System.out.println("------------h-e-r-e------------------4");
         openCells.add(startCell);
 
+
+        System.out.println("------------h-e-r-e-----------------5-");
         while (!openCells.isEmpty()) {
+
+            System.out.println("------------h-e-r-e------------------6");
             PathCell currentCell = openCells.poll();
+
+            System.out.println("------------h-e-r-e------------------7");
             if (closedCells.contains(currentCell)) {
+
+                System.out.println("------------h-e-r-e------------------8");
                 continue;
+
             }
+
+            System.out.println("------------h-e-r-e------------------10");
             closedCells.add(currentCell);
 
+            System.out.println("------------h-e-r-e------------------11");
+
             if (isGoal(currentCell)) {
+
+                System.out.println("------------h-e-r-e------------------");
                 return reconstructRoute(currentCell);
             }
 
