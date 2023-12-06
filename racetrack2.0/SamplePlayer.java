@@ -77,7 +77,7 @@ public class SamplePlayer extends RaceTrackPlayer {
 
 
     /**
-     * Ellenőrzi, hogy az adott mezo helyzete megegyezik-e a cellal
+     * Ellenorzi, hogy az adott mezo helyzete megegyezik-e a cellal
      * @param cell - a vizsgalando cella, amit meg akarunk nezni, hogy azonos-e a cellal
      * @return logikai valtozo, hogy a cella megegyezik-e a cellal
      */
@@ -102,7 +102,7 @@ public class SamplePlayer extends RaceTrackPlayer {
      * Rekonstrualja az utat, visszakoveti az utat a celmezotol a kezdopontig
      * A metódus a PathCell objektumok parent adatait használja
      * minden lepest a route-hoz ad hozza
-     * @param celmezo -  cél pozíciója található, célmező PathCell objektum
+     * @param celmezo -  cel pozicioja talalhato, celmezo PathCell objektum
      * @return ha ures az utvonal egy helyben marad, ha nem ures, az utvonal elso elemet adja vissza
      */
     private Direction reconstructRoute(Node goal) {
@@ -119,7 +119,7 @@ public class SamplePlayer extends RaceTrackPlayer {
     /**
      * A celhoz vezeto ut kiszamitasa
      * @param timeBudget
-     * @return utvonal a celig. Ha nem talált útvonalat egy helyben marad
+     * @return utvonal a celig. Ha nem talalt útvonalat egy helyben marad
      */
     @Override
     public Direction getDirection(long timeBudget) {
