@@ -29,6 +29,8 @@ public class SamplePlayer extends RaceTrackPlayer {
         this.coins = coins;
     }
 
+    private List<PathCell> map = RaceTrackGame.BFS(state.i, state.j, track);
+
     private boolean isCoinWithinDistance(Coin coin, int distance) {
         return Math.abs(coin.i - state.i) + Math.abs(coin.j - state.j) <= distance;
     }
@@ -91,7 +93,7 @@ public class SamplePlayer extends RaceTrackPlayer {
             route.addFirst(new Direction(current.i - current.parent.i, current.j - current.parent.j));
             current = current.parent;
         }
-        System.out.println("------------r__------:" + route.getFirst());
+        System.out.println("------------r__------:" + current);
         return route.isEmpty() ? STAY : route.getFirst();
     }
 
@@ -103,6 +105,7 @@ public class SamplePlayer extends RaceTrackPlayer {
     @Override
     public Direction getDirection(long timeBudget) {
         PathCell startCell = new PathCell(state.i, state.j, null);
+
 
         System.out.println("------------h-e-r-e------------------");
         gValues.put(startCell, 0);
@@ -137,9 +140,9 @@ public class SamplePlayer extends RaceTrackPlayer {
 
 
             PathCell goalCell = findGoalCell();
-            System.out.println("------------h-e-r-e-----goalcell-------------" + goalCell.parent);
+//            System.out.println("------------h-e-r-e-----goalcell-------------" + goalCell.parent);
             int[] pos= findGoalPosition();
-            System.out.println("------------h-e-r-e-----pos-------------" + pos[0] + ", " + pos[1] );
+//            System.out.println("------------h-e-r-e-----pos-------------" + pos[0] + ", " + pos[1] );
 
 //            if (goalCell != null && isGoal(currentCell)) {
 //
@@ -148,17 +151,17 @@ public class SamplePlayer extends RaceTrackPlayer {
 //            }
 
 
-    /*    if (isGoal(goalCell)) {
+      if (isGoal(currentCell)) {
             //todo: tul hosszu a ciklus. lejar sz ido mielott vegigszkennelne es aznositana a celt. itt kelene egy olyan fuggveny, ami
             //megtalálja a celt es visszaadja a cel i,j idexet, a reconstructRoute, pedig csak azt dolgozna fel, azt kapna parametrben
 
             System.out.println("------------h-e-r-e---it is a goal cell :D---------------");
-
-            System.out.println("------------h-e-r-e-----ee-------------");
+//
+//            System.out.println("------------h-e-r-e-----ee-------------");
                return reconstructRoute(currentCell);
-        }
+       }
 
-*/
+
             for (int vi = -SPEED; vi <= SPEED; vi++) {
                 for (int vj = -SPEED; vj <= SPEED; vj++) {
                     int nextRow = currentCell.i + vi;
@@ -177,7 +180,7 @@ public class SamplePlayer extends RaceTrackPlayer {
                 }
             }
 
-           // return STAY;
+            return STAY;
         }
         return STAY;
     }
