@@ -29,8 +29,6 @@ public class SamplePlayer extends RaceTrackPlayer {
         this.coins = coins;
     }
 
-    private List<PathCell> map = RaceTrackGame.BFS(state.i, state.j, track);
-
     private boolean isCoinWithinDistance(Coin coin, int distance) {
         return Math.abs(coin.i - state.i) + Math.abs(coin.j - state.j) <= distance;
     }
@@ -53,28 +51,6 @@ public class SamplePlayer extends RaceTrackPlayer {
         return null;
     }
 
-    //visszaadja a parentet is
-    private PathCell findGoalCell() {
-        for (int i = 0; i < track.length; i++) {
-            for (int j = 0; j < track[i].length; j++) {
-                if ((track[i][j] & RaceTrackGame.FINISH) == RaceTrackGame.FINISH) {
-                    // Find an adjacent cell to use as the parent for the goal
-                    for (int vi = -1; vi <= 1; vi++) {
-                        for (int vj = -1; vj <= 1; vj++) {
-                            if (vi == 0 && vj == 0) continue; // Skip the goal cell itself
-                            int parentRow = i + vi;
-                            int parentCol = j + vj;
-                            if (canMoveTo(parentRow, parentCol)) {
-                                return new PathCell(i, j, new PathCell(parentRow, parentCol, null));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return null; // Goal cell not found or no valid parent
-    }
-
     private boolean isGoal(PathCell cell) {
         return cell.i == goalPosition[0] && cell.j == goalPosition[1];
     }
@@ -85,16 +61,9 @@ public class SamplePlayer extends RaceTrackPlayer {
 
     private Direction reconstructRoute(PathCell goal) {
 
-        System.out.println("------------h-e-r-e----------reconstructRoute--------");
-        LinkedList<Direction> route = new LinkedList<>();
-
-        PathCell current = goal;
-        while (current.parent != null) {
-            route.addFirst(new Direction(current.i - current.parent.i, current.j - current.parent.j));
-            current = current.parent;
-        }
-        System.out.println("------------r__------:" + current);
-        return route.isEmpty() ? STAY : route.getFirst();
+        List<PathCell> map = RaceTrackGame.BFS(state.i, state.j, track);
+        System.out.println("map: " + map);
+        return STAY ;
     }
 
 
@@ -105,62 +74,26 @@ public class SamplePlayer extends RaceTrackPlayer {
     @Override
     public Direction getDirection(long timeBudget) {
         PathCell startCell = new PathCell(state.i, state.j, null);
-
-
-        System.out.println("------------h-e-r-e------------------");
+        PriorityQueue<PathCell> openCells = new PriorityQueue<>((cell1, cell2) -> f(cell1) - f(cell2));
+        Set<PathCell> closedCells = new HashSet<>();
+        openCells.add(startCell);
         gValues.put(startCell, 0);
-        System.out.println("------------h-e-r-e----1--------------");
         hValues.put(startCell, calcHeuristic(state.i, state.j));
 
-        //Coin nearestCoin = findNearestCoin();
-
-       /* if (nearestCoin != null && isCoinWithinDistance(nearestCoin, 5) && !collectedCoins.contains(nearestCoin)) {
-            return computePathToCoin(startCell, nearestCoin);
-        }
-*/
-        PriorityQueue<PathCell> openCells = new PriorityQueue<>((cell1, cell2) -> f(cell1) - f(cell2));
-
-        Set<PathCell> closedCells = new HashSet<>();
-
-
-        openCells.add(startCell);
+        Map<PathCell, PathCell> cameFrom = new HashMap<>();
+        PathCell currentCell;
 
         while (!openCells.isEmpty()) {
+            currentCell = openCells.poll();
 
-            PathCell currentCell = openCells.poll();
-
-            if (closedCells.contains(currentCell)) {
-
-                continue;
-
+            if (isGoal(currentCell)) {
+                return extractDirection(cameFrom, currentCell);
             }
 
+            if (closedCells.contains(currentCell)) {
+                continue;
+            }
             closedCells.add(currentCell);
-
-
-
-            PathCell goalCell = findGoalCell();
-//            System.out.println("------------h-e-r-e-----goalcell-------------" + goalCell.parent);
-            int[] pos= findGoalPosition();
-//            System.out.println("------------h-e-r-e-----pos-------------" + pos[0] + ", " + pos[1] );
-
-//            if (goalCell != null && isGoal(currentCell)) {
-//
-//                System.out.println("------------h-e-r-e-----recs-------------");
-//             //   return reconstructRoute(goalCell);
-//            }
-
-
-      if (isGoal(currentCell)) {
-            //todo: tul hosszu a ciklus. lejar sz ido mielott vegigszkennelne es aznositana a celt. itt kelene egy olyan fuggveny, ami
-            //megtalálja a celt es visszaadja a cel i,j idexet, a reconstructRoute, pedig csak azt dolgozna fel, azt kapna parametrben
-
-            System.out.println("------------h-e-r-e---it is a goal cell :D---------------");
-//
-//            System.out.println("------------h-e-r-e-----ee-------------");
-               return reconstructRoute(currentCell);
-       }
-
 
             for (int vi = -SPEED; vi <= SPEED; vi++) {
                 for (int vj = -SPEED; vj <= SPEED; vj++) {
@@ -176,12 +109,36 @@ public class SamplePlayer extends RaceTrackPlayer {
                         gValues.put(neighbor, gValues.get(currentCell) + 1);
                         hValues.put(neighbor, calcHeuristic(nextRow, nextColumn));
                         openCells.add(neighbor);
+                        cameFrom.put(neighbor, currentCell);
                     }
                 }
             }
-
-            return STAY;
         }
         return STAY;
     }
+
+    private Direction extractDirection(Map<PathCell, PathCell> cameFrom, PathCell goalCell) {
+        PathCell current = goalCell;
+        PathCell parent = cameFrom.get(current);
+
+        if (parent == null) {
+            return STAY; // Ha nincs szülő, akkor maradunk a helyünkön
+        }
+
+        // Visszafelé haladunk az úton, hogy megtaláljuk az első lépést
+        while (parent != null && parent.parent != null) {
+            current = parent;
+            parent = cameFrom.get(current);
+        }
+
+        // Meghatározzuk az irányt az első lépés alapján
+        if (current.i > state.i) return DOWN;
+        if (current.i < state.i) return UP;
+        if (current.j > state.j) return RIGHT;
+        if (current.j < state.j) return LEFT;
+
+        return STAY;
+    }
+
+
 }
