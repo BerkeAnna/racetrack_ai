@@ -51,6 +51,7 @@ public class SamplePlayer extends RaceTrackPlayer {
         return null;
     }
 
+    //visszaadja a parentet is
     private PathCell findGoalCell() {
         for (int i = 0; i < track.length; i++) {
             for (int j = 0; j < track[i].length; j++) {
