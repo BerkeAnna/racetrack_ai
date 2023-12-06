@@ -3,7 +3,6 @@ import game.racetrack.RaceTrackGame;
 import game.racetrack.RaceTrackPlayer;
 import game.racetrack.utils.Coin;
 import game.racetrack.utils.PlayerState;
-import game.racetrack.utils.Cell;
 import game.racetrack.utils.PathCell;
 import java.util.*;
 
@@ -29,17 +28,6 @@ public class SamplePlayer extends RaceTrackPlayer {
         this.coins = coins;
     }
 
-    private boolean isCoinWithinDistance(Coin coin, int distance) {
-        return Math.abs(coin.i - state.i) + Math.abs(coin.j - state.j) <= distance;
-    }
-
-    private boolean canMoveTo(int i, int j) {
-        if (i < 0 || i >= track.length || j < 0 || j >= track[0].length) {
-            return false;
-        }
-        return (track[i][j] & RaceTrackGame.WALL) == 0;
-    }
-
     private int[] findGoalPosition() {
         for (int i = 0; i < track.length; i++) {
             for (int j = 0; j < track[i].length; j++) {
@@ -51,62 +39,40 @@ public class SamplePlayer extends RaceTrackPlayer {
         return null;
     }
 
-    private boolean isGoal(PathCell cell) {
-        return cell.i == goalPosition[0] && cell.j == goalPosition[1];
+    private boolean canMoveTo(int i, int j) {
+        return i >= 0 && i < track.length && j >= 0 && j < track[0].length && (track[i][j] & RaceTrackGame.WALL) == 0;
     }
 
     private int calcHeuristic(int i, int j) {
         return Math.abs(i - goalPosition[0]) + Math.abs(j - goalPosition[1]);
     }
 
-    private Direction reconstructRoute(PathCell goal) {
-
-        System.out.println("------------h-e-r-e------------------13");
-        LinkedList<Direction> route = new LinkedList<>();
-
-        System.out.println("------------h-e-r-e------------------14");
+    private Direction getBestDirection(PathCell goal) {
+        if (goal == null) return STAY;
         PathCell current = goal;
+        Direction bestDirection = STAY;
+
         while (current.parent != null) {
-            route.addFirst(new Direction(current.i - current.parent.i, current.j - current.parent.j));
+            bestDirection = new Direction(current.i - current.parent.i, current.j - current.parent.j);
             current = current.parent;
         }
 
-        System.out.println("------------h-e-r-e------------------15");
-        return route.isEmpty() ? STAY : route.getFirst();
+        return bestDirection;
     }
 
-    private Coin findNearestCoin() {
-        Coin nearest = null;
-        int minDistance = Integer.MAX_VALUE;
-        for (Coin coin : coins) {
-            if (!collectedCoins.contains(coin)) {
-                int distance = Math.abs(coin.i - state.i) + Math.abs(coin.j - state.j);
-                if (distance < minDistance) {
-                    nearest = coin;
-                    minDistance = distance;
-                }
-            }
-        }
-        return nearest;
-    }
-
-    private Direction computePathToCoin(PathCell startCell, Coin coin) {
-        PriorityQueue<PathCell> openCells = new PriorityQueue<>((cell1, cell2) -> f(cell1) - f(cell2));
+    private Direction findPathToGoal() {
+        PriorityQueue<PathCell> openCells = new PriorityQueue<>(Comparator.comparingInt(this::f));
         Set<PathCell> closedCells = new HashSet<>();
+        PathCell startCell = new PathCell(state.i, state.j, null);
         openCells.add(startCell);
         gValues.put(startCell, 0);
-        hValues.put(startCell, calcHeuristicToCoin(startCell, coin));
+        hValues.put(startCell, calcHeuristic(state.i, state.j));
 
         while (!openCells.isEmpty()) {
             PathCell currentCell = openCells.poll();
-            if (closedCells.contains(currentCell)) {
-                continue;
-            }
-            closedCells.add(currentCell);
 
-            if (currentCell.i == coin.i && currentCell.j == coin.j) {
-                collectedCoins.add(coin);
-                return reconstructRoute(currentCell);
+            if (currentCell.i == goalPosition[0] && currentCell.j == goalPosition[1]) {
+                return getBestDirection(currentCell);
             }
 
             for (int vi = -SPEED; vi <= SPEED; vi++) {
@@ -120,98 +86,24 @@ public class SamplePlayer extends RaceTrackPlayer {
 
                     PathCell neighbor = new PathCell(nextRow, nextColumn, currentCell);
                     if (!closedCells.contains(neighbor) && !openCells.contains(neighbor)) {
-                        gValues.put(neighbor, gValues.get(currentCell) + 1);
-                        hValues.put(neighbor, calcHeuristicToCoin(neighbor, coin));
-                        openCells.add(neighbor);
-                    }
-                }
-            }
-        }
-        return STAY;
-    }
-
-    private int calcHeuristicToCoin(PathCell cell, Coin nearestCoin) {
-        if (nearestCoin != null) {
-            return Math.abs(cell.i - nearestCoin.i) + Math.abs(cell.j - nearestCoin.j);
-        }
-        return Integer.MAX_VALUE;
-    }
-
-    private int f(PathCell cell) {
-        return gValues.getOrDefault(cell, 0) + hValues.getOrDefault(cell, 0);
-    }
-
-    @Override
-    public Direction getDirection(long timeBudget) {
-        PathCell startCell = new PathCell(state.i, state.j, null);
-
-       // System.out.println("------------h-e-r-e------------------");
-        gValues.put(startCell, 0);
-       // System.out.println("------------h-e-r-e----1--------------");
-        hValues.put(startCell, calcHeuristic(state.i, state.j));
-
-        System.out.println("------------h-e-r-e-----2-------------");
-        //Coin nearestCoin = findNearestCoin();
-
-       /* if (nearestCoin != null && isCoinWithinDistance(nearestCoin, 5) && !collectedCoins.contains(nearestCoin)) {
-            return computePathToCoin(startCell, nearestCoin);
-        }
-*/
-        PriorityQueue<PathCell> openCells = new PriorityQueue<>((cell1, cell2) -> f(cell1) - f(cell2));
-
-        //System.out.println("------------h-e-r-e-----------------3-");
-        Set<PathCell> closedCells = new HashSet<>();
-
-
-       // System.out.println("------------h-e-r-e------------------4");
-        openCells.add(startCell);
-
-
-    //    System.out.println("------------h-e-r-e-----------------5-");
-        while (!openCells.isEmpty()) {
-
-       //     System.out.println("------------h-e-r-e------------------6");
-            PathCell currentCell = openCells.poll();
-
-       //     System.out.println("------------h-e-r-e------------------7");
-            if (closedCells.contains(currentCell)) {
-
-          //      System.out.println("------------h-e-r-e------------------8");
-                continue;
-
-            }
-
-           // System.out.println("------------h-e-r-e------------------10");
-            closedCells.add(currentCell);
-
-        //    System.out.println("------------h-e-r-e------------------11");
-
-            if (isGoal(currentCell)) {
-
-        //        System.out.println("------------h-e-r-e------------------");
-        //        System.out.println("------------h-e-r-e------------------");
-                return reconstructRoute(currentCell);
-            }
-
-
-            for (int vi = -SPEED; vi <= SPEED; vi++) {
-                for (int vj = -SPEED; vj <= SPEED; vj++) {
-                    int nextRow = currentCell.i + vi;
-                    int nextColumn = currentCell.j + vj;
-
-                    if (!canMoveTo(nextRow, nextColumn)) {
-                        continue;
-                    }
-
-                    PathCell neighbor = new PathCell(nextRow, nextColumn, currentCell);
-                    if (!closedCells.contains(neighbor)) {
-                        gValues.put(neighbor, gValues.get(currentCell) + 1);
+                        gValues.put(neighbor, gValues.getOrDefault(currentCell, 0) + 1);
                         hValues.put(neighbor, calcHeuristic(nextRow, nextColumn));
                         openCells.add(neighbor);
                     }
                 }
             }
+            closedCells.add(currentCell);
         }
+
         return STAY;
+    }
+
+    @Override
+    public Direction getDirection(long timeBudget) {
+        return findPathToGoal();
+    }
+
+    private int f(PathCell cell) {
+        return gValues.getOrDefault(cell, 0) + hValues.getOrDefault(cell, 0);
     }
 }

@@ -33,7 +33,7 @@ public class Agent extends RaceTrackPlayer {
      * Ellenorzi, hogy az adott koordinataju mezo lepheto-e
      * @param i - 1. koordinata
      * @param j - 2. koordinata
-     * @return ha a mezĹ‘n fal van, vagy a palyan kivuli mezo lenne hamisat ad vissza, ha lephetĹ‘ igazat
+     * @return ha a
      */
     private boolean canMoveTo(int i, int j) {
         if (i < 0 || i >= track.length) {
@@ -181,7 +181,7 @@ public class Agent extends RaceTrackPlayer {
 
         /**
          * Egesz szamot general, ami az objektum tartalmat mutatja
-         * @return general egy szamot, ami az i Ă©s j ertekeit veszi figyelembe
+         * @return general egy szamot, ami az i
          */
         @Override
         public int hashCode() {
