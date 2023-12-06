@@ -61,8 +61,8 @@ public class SamplePlayer extends RaceTrackPlayer {
 
     /**
      * A cel poziciojanak keresese
-     * @return A cel pozicio koordinatait tarolo egesz szamokbĂłl allo tomb.
-     *  *         Ha nincs cel a palyan vagy nem talal, null Ă©rtĂ©kkel tĂ©r vissza.
+     * @return A cel pozicio koordinatait tarolo egesz szamokbol allo tomb.
+     *  *         Ha nincs cel a palyan vagy nem talal, null ertekkel ter vissza.
      */
     private int[] findGoalPosition() {
         for (int i = 0; i < track.length; i++) {
@@ -87,10 +87,10 @@ public class SamplePlayer extends RaceTrackPlayer {
 
 
 
-    /**a megadott ko
+    /** kiszamolja a megadott koordinatak alapjan a mezo tavolsagat a celhoz kepest
      * @param i - 1. koordinata -aktualis mezo sora
      * @param j - 2. koordinata - aktualis mezo oszlopa
-     * @return  heurisztikus erteke - abszolut ertek osszege, az i Ă©s celmezo sora, a j es celmezo oszlopa
+     * @return  heurisztikus erteke - abszolut ertek osszege, az i es celmezo sora, a j es celmezo oszlopa
      */
     private int calcHeuristic(int i, int j) {
         return Math.abs(i - goalPosition[0]) + Math.abs(j - goalPosition[1]);
@@ -118,7 +118,7 @@ public class SamplePlayer extends RaceTrackPlayer {
     /**
      * A celhoz vezeto ut kiszamitasa
      * @param timeBudget
-     * @return utvonal a celig. Ha nem talalt Ăştvonalat egy helyben marad
+     * @return utvonal a celig. Ha nem talalt utvonalat egy helyben marad
      */
     @Override
     public Direction getDirection(long timeBudget) {
@@ -157,7 +157,6 @@ public class SamplePlayer extends RaceTrackPlayer {
                     if (!canMoveTo(nextRow, nextColumn)) {
                          nextRow = currentNode.i - vi;
                          nextColumn = currentNode.j - vj;
-                        //System.out.println("continue.......");
                         continue;
                     }
 
@@ -169,7 +168,7 @@ public class SamplePlayer extends RaceTrackPlayer {
             }
 
         }
-        // Ha nem talĂˇlt Ăştvonalat
+        // Ha nem talal utvonalat
         return STAY;
     }
 
@@ -200,7 +199,7 @@ public class SamplePlayer extends RaceTrackPlayer {
          * Ellenorzi, hogy a ket Node objektum egyenlo-e
          * @param objekt
          * @return osszehasonlitja a ket Node objekt i es j koordinatait,
-         *  ellenorzi, hogy a parameterben kapott object nem null Ä‚Â©s azonos osztalyu-e, mint a Node,
+         *  ellenorzi, hogy a parameterben kapott object nem null es azonos osztalyu-e, mint a Node,
          *  az object onmagaval egyezik-e
          */
         @Override
