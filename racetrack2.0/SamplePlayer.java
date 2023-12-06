@@ -95,27 +95,38 @@ public class SamplePlayer extends RaceTrackPlayer {
             }
             closedCells.add(currentCell);
 
-            for (int vi = -SPEED; vi <= SPEED; vi++) {
-                for (int vj = -SPEED; vj <= SPEED; vj++) {
-                    int nextRow = currentCell.i + vi;
-                    int nextColumn = currentCell.j + vj;
+            // Módosított mozgás: csak vízszintes vagy függőleges irányban
+            for (int delta = -SPEED; delta <= SPEED; delta++) {
+                if (delta != 0) {
+                    int nextRow = currentCell.i + delta;
+                    int nextColumn = currentCell.j;
 
-                    if (!canMoveTo(nextRow, nextColumn)) {
-                        continue;
+                    if (canMoveTo(nextRow, nextColumn)) {
+                        processNeighbor(openCells, closedCells, cameFrom, currentCell, nextRow, nextColumn);
                     }
 
-                    PathCell neighbor = new PathCell(nextRow, nextColumn, currentCell);
-                    if (!closedCells.contains(neighbor)) {
-                        gValues.put(neighbor, gValues.get(currentCell) + 1);
-                        hValues.put(neighbor, calcHeuristic(nextRow, nextColumn));
-                        openCells.add(neighbor);
-                        cameFrom.put(neighbor, currentCell);
+                    nextRow = currentCell.i;
+                    nextColumn = currentCell.j + delta;
+
+                    if (canMoveTo(nextRow, nextColumn)) {
+                        processNeighbor(openCells, closedCells, cameFrom, currentCell, nextRow, nextColumn);
                     }
                 }
             }
         }
         return STAY;
     }
+
+    private void processNeighbor(PriorityQueue<PathCell> openCells, Set<PathCell> closedCells, Map<PathCell, PathCell> cameFrom, PathCell currentCell, int nextRow, int nextColumn) {
+        PathCell neighbor = new PathCell(nextRow, nextColumn, currentCell);
+        if (!closedCells.contains(neighbor)) {
+            gValues.put(neighbor, gValues.get(currentCell) + 1);
+            hValues.put(neighbor, calcHeuristic(nextRow, nextColumn));
+            openCells.add(neighbor);
+            cameFrom.put(neighbor, currentCell);
+        }
+    }
+
 
     private Direction extractDirection(Map<PathCell, PathCell> cameFrom, PathCell goalCell) {
         PathCell current = goalCell;
