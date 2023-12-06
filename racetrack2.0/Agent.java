@@ -12,7 +12,7 @@ import java.util.*;
  * jatekos implementalasa
  * tartalmazza a jatekos logikajat, utvonal keresest
  */
-public class SamplePlayer extends RaceTrackPlayer {
+public class Agent extends RaceTrackPlayer {
     private int[][] track;
     private int[] goalPosition;
     private static final int SPEED = 1;
@@ -34,7 +34,7 @@ public class SamplePlayer extends RaceTrackPlayer {
      * @param coins - ermek tombje, amik a palyan vannak
      * @param color - szinek
      */
-    public SamplePlayer(PlayerState state, Random random, int[][] track, Coin[] coins, int color) {
+    public Agent(PlayerState state, Random random, int[][] track, Coin[] coins, int color) {
         super(state, random, track, coins, color);
         this.track = track;
         this.goalPosition = findGoalPosition();
