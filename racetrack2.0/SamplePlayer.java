@@ -155,6 +155,9 @@ public class SamplePlayer extends RaceTrackPlayer {
                     int nextColumn = currentNode.j + vj;
 
                     if (!canMoveTo(nextRow, nextColumn)) {
+                         nextRow = currentNode.i - vi;
+                         nextColumn = currentNode.j - vj;
+                        //System.out.println("continue.......");
                         continue;
                     }
 
