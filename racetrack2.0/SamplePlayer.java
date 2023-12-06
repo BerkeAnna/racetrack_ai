@@ -99,7 +99,7 @@ public class SamplePlayer extends RaceTrackPlayer {
 
     /**
      * Rekonstrualja az utat, visszakoveti az utat a celmezotol a kezdopontig
-     * A metĂłdus a PathCell objektumok parent adatait hasznĂˇlja
+     * A metodus a PathCell objektumok parent adatait hasznalja
      * minden lepest a route-hoz ad hozza
      * @param celmezo -  cel pozicioja talalhato, celmezo PathCell objektum
      * @return ha ures az utvonal egy helyben marad, ha nem ures, az utvonal elso elemet adja vissza
