@@ -133,19 +133,18 @@ public class SamplePlayer extends RaceTrackPlayer {
 
             closedCells.add(currentCell);
 
-        System.out.println("------------h-e-r-e-----isgoalelott-------------");
-//        int[] goal = findGoalPosition();
-//        System.out.println("GOAAAAAAAAAL------------->i: " + goal[0] + " j: " + goal[1]);
-//        PathCell goalCell1 = new PathCell(goal[0], goal[1], null); //TODO: a null helyere meg kellene adni a parentjet es utana ot hívni a rec.ben
-//        System.out.println("asd: " + goalCell1);
+
 
             PathCell goalCell = findGoalCell();
-            System.out.println("------------h-e-r-e-----goalcell-------------" + goalCell);
-            if (goalCell != null && isGoal(currentCell)) {
+            System.out.println("------------h-e-r-e-----goalcell-------------" + goalCell.parent);
+            int[] pos= findGoalPosition();
+            System.out.println("------------h-e-r-e-----pos-------------" + pos[0] + ", " + pos[1] );
 
-                System.out.println("------------h-e-r-e-----recs-------------");
-             //   return reconstructRoute(goalCell);
-            }
+//            if (goalCell != null && isGoal(currentCell)) {
+//
+//                System.out.println("------------h-e-r-e-----recs-------------");
+//             //   return reconstructRoute(goalCell);
+//            }
 
 
     /*    if (isGoal(goalCell)) {
