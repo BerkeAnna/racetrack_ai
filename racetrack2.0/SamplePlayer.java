@@ -40,6 +40,7 @@ public class SamplePlayer extends RaceTrackPlayer {
         this.track = track;
         this.goalPosition = findGoalPosition();
         this.pathToGoal = RaceTrackGame.BFS(state.i, state.j, track);
+        System.out.println("path:" + pathToGoal);
     }
 
 
@@ -156,14 +157,18 @@ public class SamplePlayer extends RaceTrackPlayer {
             pathToGoal.remove(0); // Remove the first element
 
             if (nextStep != null) {
-                int dirRow = nextStep.i - state.i;
-                int dirCol = nextStep.j - state.j;
-                return new Direction(dirRow, dirCol);
+                // Kiszámítjuk az új irányt, figyelembe véve a jelenlegi sebességet
+                int dirRow = nextStep.i - (state.i + state.vi);
+                int dirCol = nextStep.j - (state.j + state.vj);
+
+                // Ellenőrizzük, hogy az új irány érvényes-e és a pályán belül marad-e
+                if (canMoveTo(state.i + dirRow, state.j + dirCol)) {
+                    return new Direction(dirRow, dirCol);
+                }
             }
         }
-        return STAY;
+        return STAY; // Ha nincs lehetséges lépés, maradjon egy helyben
     }
-
 
 
 
