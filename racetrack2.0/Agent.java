@@ -61,8 +61,8 @@ public class Agent extends RaceTrackPlayer {
 
     /**
      * A cel poziciojanak keresese
-     * @return A cel pozicio koordinatait tarolo egesz szamokból allo tomb.
-     *  *         Ha nincs cel a palyan vagy nem talal, null értékkel tér vissza.
+     * @return A cel pozicio koordinatait tarolo egesz szamokbol allo tomb.
+     *  *         Ha nincs cel a palyan vagy nem talal, null ertekkel ter vissza.
      */
     private int[] findGoalPosition() {
         for (int i = 0; i < track.length; i++) {
@@ -87,11 +87,10 @@ public class Agent extends RaceTrackPlayer {
 
 
 
-    /**
-     * Kiszámítja a megadott koordináták alapján a mező távolságát a célhoz képest.
+    /** kiszamolja a megadott koordinatak alapjan a mezo tavolsagat a celhoz kepest
      * @param i - 1. koordinata -aktualis mezo sora
      * @param j - 2. koordinata - aktualis mezo oszlopa
-     * @return célhoz vezető távolság heurisztikus erteke - abszolut ertek osszege, az i és celmezo sora, a j es celmezo oszlopa
+     * @return  heurisztikus erteke - abszolut ertek osszege, az i es celmezo sora, a j es celmezo oszlopa
      */
     private int calcHeuristic(int i, int j) {
         return Math.abs(i - goalPosition[0]) + Math.abs(j - goalPosition[1]);
@@ -100,7 +99,7 @@ public class Agent extends RaceTrackPlayer {
 
     /**
      * Rekonstrualja az utat, visszakoveti az utat a celmezotol a kezdopontig
-     * A metódus a PathCell objektumok parent adatait használja
+     * A metodus a PathCell objektumok parent adatait hasznalja
      * minden lepest a route-hoz ad hozza
      * @param celmezo -  cel pozicioja talalhato, celmezo PathCell objektum
      * @return ha ures az utvonal egy helyben marad, ha nem ures, az utvonal elso elemet adja vissza
@@ -119,7 +118,7 @@ public class Agent extends RaceTrackPlayer {
     /**
      * A celhoz vezeto ut kiszamitasa
      * @param timeBudget
-     * @return utvonal a celig. Ha nem talalt útvonalat egy helyben marad
+     * @return utvonal a celig. Ha nem talalt utvonalat egy helyben marad
      */
     @Override
     public Direction getDirection(long timeBudget) {
@@ -142,26 +141,39 @@ public class Agent extends RaceTrackPlayer {
             if (isGoal(currentNode)) { //ha a celmezo, akkor visszavezeti  az utat. felepiti a cel es a kezdopont kozotti utat
                 return reconstructRoute(currentNode);
             }
-            // Szomszédos mezők vizsgálata
+            // Szomszedos mezok vizsgalata
             // dupla ciklussal megnezi az osszes szomszedjat, az atlosakat is
-            for (int vi = SPEED; vi >= -SPEED; vi--) {
-                for (int vj = SPEED; vj >= -SPEED; vj--) {
+            // Szomszedos mezok keresese
+            for (int vi = -1; vi <= 1; vi++) {
+                for (int vj = -1; vj <= 1; vj++) {
+                    // Kihagyja a jelenlegi poziciot (maradas)
+                    if (vi == 0 && vj == 0) {
+                        continue;
+                    }
+
                     int nextRow = currentNode.i + vi;
                     int nextColumn = currentNode.j + vj;
 
-                    // Ellenőrizzük, hogy léphetünk-e erre a mezőre
+
+                    // Ellenorzes, hogy lephetunk-e a mezore
+
                     if (!canMoveTo(nextRow, nextColumn)) {
+                        nextRow = currentNode.i - vi;
+                        nextColumn = currentNode.j - vj;
                         continue;
                     }
                     //ha lepheto, letrehoz egy uj node-t, ha nincs benne se a nyitott,se a zart sorban, akkor hozzadja az openNodes-hoz.
+
+
                     Node neighbor = new Node(nextRow, nextColumn, currentNode, currentNode.g + 1, calcHeuristic(nextRow, nextColumn));
-                    if (!closedNodes.contains(neighbor)) {
+                    if (!closedNodes.contains(neighbor) && !openNodes.contains(neighbor)) {
                         openNodes.add(neighbor);
                     }
                 }
             }
+
         }
-        // Ha nem talált útvonalat
+        // Ha nem talal utvonalat
         return STAY;
     }
 
@@ -192,7 +204,7 @@ public class Agent extends RaceTrackPlayer {
          * Ellenorzi, hogy a ket Node objektum egyenlo-e
          * @param objekt
          * @return osszehasonlitja a ket Node objekt i es j koordinatait,
-         *  ellenorzi, hogy a parameterben kapott object nem null Ă©s azonos osztalyu-e, mint a Node,
+         *  ellenorzi, hogy a parameterben kapott object nem null es azonos osztalyu-e, mint a Node,
          *  az object onmagaval egyezik-e
          */
         @Override
