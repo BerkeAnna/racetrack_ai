@@ -56,7 +56,7 @@ public class SamplePlayer extends RaceTrackPlayer {
         if(j < 0 || j >= track[0].length){
             return false;
         }
-        return (track[i][j] & RaceTrackGame.WALL) == 0;
+        return RaceTrackGame.isNotWall(i, j, track);
     }
 
     /**
