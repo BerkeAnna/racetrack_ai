@@ -17,7 +17,7 @@ public class SamplePlayer extends RaceTrackPlayer {
     private int[][] track;
     private int[] goalPosition;
     private static final int SPEED = 1;
-
+    private List<PathCell> pathToGoal;
     /**
      * Mozgasiranyok
      */
@@ -39,6 +39,7 @@ public class SamplePlayer extends RaceTrackPlayer {
         super(state, random, track, coins, color);
         this.track = track;
         this.goalPosition = findGoalPosition();
+        this.pathToGoal = RaceTrackGame.BFS(state.i, state.j, track);
     }
 
 
@@ -108,7 +109,7 @@ public class SamplePlayer extends RaceTrackPlayer {
      * @param cell - a vizsgalando cella, amit meg akarunk nezni, hogy azonos-e a cellal
      * @return logikai valtozo, hogy a cella megegyezik-e a cellal
      */
-    private boolean isGoal(Node node) {
+    private boolean isGoal(PathCell node) {
         return node.i == goalPosition[0] && node.j == goalPosition[1];
     }
 
@@ -132,9 +133,9 @@ public class SamplePlayer extends RaceTrackPlayer {
      * @param celmezo -  cel pozicioja talalhato, celmezo PathCell objektum
      * @return ha ures az utvonal egy helyben marad, ha nem ures, az utvonal elso elemet adja vissza
      */
-    private Direction reconstructRoute(Node goal) {
+    private Direction reconstructRoute(PathCell goal) {
         LinkedList<Direction> route = new LinkedList<>();
-        Node current = goal; //celra mutat a current
+        PathCell current = goal; //celra mutat a current
         while (current != null && current.parent != null) {//addig fut, amig van szuloje a mezonek
             route.addFirst(new Direction(current.i - current.parent.i, current.j - current.parent.j));//hozzaadja a current es szuloje kozotti iranyt
             current = current.parent;
@@ -150,108 +151,22 @@ public class SamplePlayer extends RaceTrackPlayer {
      */
     @Override
     public Direction getDirection(long timeBudget) {
-        //letrehoz egy uj node-ot , aminek koltsege 0, a heurisztikat pedig az aktualis helyzetbol szamolja
-        Node startNode = new Node(state.i, state.j, null, 0, calcHeuristic(state.i, state.j, findGoalCell()));
-        //prioritasi sor,  ket node-ot hasonlit ossze, az f-ek alapjan, alacsonyabb f-el rendelkezo kap nagyobb prioritast
-        PriorityQueue<Node> openNodes = new PriorityQueue<>((node1, node2) -> node1.f() - node2.f());
-        //letrehoz egy halmazt
-        Set<Node> closedNodes = new HashSet<>();
-        //atadja a kezdomezot
-        openNodes.add(startNode);
+        if (pathToGoal != null && !pathToGoal.isEmpty()) {
+            PathCell nextStep = pathToGoal.get(0); // Get the first element
+            pathToGoal.remove(0); // Remove the first element
 
-        while (!openNodes.isEmpty()) {//addig fut, amig az openNodes nem ures
-            Node currentNode = openNodes.poll(); //kiveszi a legjobbat
-            if (closedNodes.contains(currentNode)) { //ha benne van mar a closedNodes-ban, akkor tovabblep a kovetkezo iteracioba
-                continue;
+            if (nextStep != null) {
+                int dirRow = nextStep.i - state.i;
+                int dirCol = nextStep.j - state.j;
+                return new Direction(dirRow, dirCol);
             }
-            closedNodes.add(currentNode); //hozzaadja a closedNodes-hoz
-
-            if (isGoal(currentNode)) { //ha a celmezo, akkor visszavezeti  az utat. felepiti a cel es a kezdopont kozotti utat
-                return reconstructRoute(currentNode);
-            }
-            // Szomszedos mezok vizsgalata
-            // dupla ciklussal megnezi az osszes szomszedjat, az atlosakat is
-            // Szomszedos mezok keresese
-            for (int vi = -1; vi <= 1; vi++) {
-                for (int vj = -1; vj <= 1; vj++) {
-                    // Kihagyja a jelenlegi poziciot (maradas)
-                    if (vi == 0 && vj == 0) {
-                        continue;
-                    }
-
-                    int nextRow = currentNode.i + vi;
-                    int nextColumn = currentNode.j + vj;
-
-
-                    // Ellenorzes, hogy lephetunk-e a mezore
-
-                    if (!canMoveTo(nextRow, nextColumn)) {
-                         nextRow = currentNode.i - vi;
-                         nextColumn = currentNode.j - vj;
-                        continue;
-                    }
-                    //ha lepheto, letrehoz egy uj node-t, ha nincs benne se a nyitott,se a zart sorban, akkor hozzadja az openNodes-hoz.
-
-
-                    Node neighbor = new Node(nextRow, nextColumn, currentNode, currentNode.g + 1, calcHeuristic(nextRow, nextColumn, findGoalCell()));
-                    if (!closedNodes.contains(neighbor) && !openNodes.contains(neighbor)) {
-                        openNodes.add(neighbor);
-                    }
-                }
-            }
-
         }
-        // Ha nem talal utvonalat
         return STAY;
     }
 
-    /**
-     * Node osztaly letrehozasa, ami a pathCell-bol oroklodik. Hasznalja a pathcell eredeti adattagjait, de
-     * az a* algoritmushoz szukseges g,h, f adatokat is kiszamolja.
-     */
-    private class Node extends PathCell {
-        Node parent;
-        int g, h;
 
-        Node(int i, int j, Node parent, int g, int h) {
-            super(i, j, parent);
-            this.parent = parent;
-            this.g = g;
-            this.h = h;
-        }
 
-        /**
-         * Megtett ut (g) es celpontig vezeto ut (h) koltsegenek osszegenek kiszamitasa
-         * @return f = g + h
-         */
-        int f() {
-            return g + h;
-        }
 
-        /**
-         * Ellenorzi, hogy a ket Node objektum egyenlo-e
-         * @param objekt
-         * @return osszehasonlitja a ket Node objekt i es j koordinatait,
-         *  ellenorzi, hogy a parameterben kapott object nem null es azonos osztalyu-e, mint a Node,
-         *  az object onmagaval egyezik-e
-         */
-        @Override
-        public boolean equals(Object object) {
-            if (this == object) { return true; }
-            if (object == null || getClass() != object.getClass()){ return false; }
-            Node node = (Node) object;
-            return i == node.i && j == node.j;
-        }
-
-        /**
-         * Egesz szamot general, ami az objektum tartalmat mutatja
-         * @return general egy szamot, ami az i es j ertekeit veszi figyelembe
-         */
-        @Override
-        public int hashCode() {
-            return Objects.hash(i, j);
-        }
-    }
 
 
 }
