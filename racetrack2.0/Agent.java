@@ -7,6 +7,7 @@ import game.racetrack.RaceTrackPlayer;
 import game.racetrack.utils.Coin;
 import game.racetrack.utils.PlayerState;
 import game.racetrack.utils.PathCell;
+import game.racetrack.utils.Cell;
 import java.util.*;
 /**
  * jatekos implementalasa
@@ -56,7 +57,7 @@ public class Agent extends RaceTrackPlayer {
         if(j < 0 || j >= track[0].length){
             return false;
         }
-        return (track[i][j] & RaceTrackGame.WALL) == 0;
+        return RaceTrackGame.isNotWall(i, j, track);
     }
 
     /**
@@ -75,6 +76,32 @@ public class Agent extends RaceTrackPlayer {
         return null;
     }
 
+    /**
+     * A cel cella keresese
+     * @return Egy pathcell, ami a célezőt tárolja az osevel együtt
+     *  *         Ha nincs cel a palyan vagy nem talal, null ertekkel ter vissza.
+     */
+    private PathCell findGoalCell() {
+        for (int i = 0; i < track.length; i++) {
+            for (int j = 0; j < track[i].length; j++) {
+                if ((track[i][j] & RaceTrackGame.FINISH) == RaceTrackGame.FINISH) {
+                    // szomszedos ezoket keres, ami szulo lehet
+                    for (int vi = -1; vi <= 1; vi++) {
+                        for (int vj = -1; vj <= 1; vj++) {
+                            if (vi == 0 && vj == 0) continue; // sajat magat kihagyja
+                            int parentRow = i + vi;
+                            int parentCol = j + vj;
+                            if (canMoveTo(parentRow, parentCol)) {
+                                return new PathCell(i, j, new PathCell(parentRow, parentCol, null));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null; // Goal cell not found or no valid parent
+    }
+
 
     /**
      * Ellenorzi, hogy az adott mezo helyzete megegyezik-e a cellal
@@ -87,13 +114,14 @@ public class Agent extends RaceTrackPlayer {
 
 
 
-    /** kiszamolja a megadott koordinatak alapjan a mezo tavolsagat a celhoz kepest
+    /** kiszamolja a megadott koordinatak alapjan a mezo manhattan tavolsagat a celhoz kepest
      * @param i - 1. koordinata -aktualis mezo sora
      * @param j - 2. koordinata - aktualis mezo oszlopa
      * @return  heurisztikus erteke - abszolut ertek osszege, az i es celmezo sora, a j es celmezo oszlopa
      */
-    private int calcHeuristic(int i, int j) {
-        return Math.abs(i - goalPosition[0]) + Math.abs(j - goalPosition[1]);
+    private int calcHeuristic(int i, int j, PathCell cell) {
+        Cell startCell = new Cell(i,j);
+        return RaceTrackGame.manhattanDistance(startCell, cell);
     }
 
 
@@ -123,7 +151,7 @@ public class Agent extends RaceTrackPlayer {
     @Override
     public Direction getDirection(long timeBudget) {
         //letrehoz egy uj node-ot , aminek koltsege 0, a heurisztikat pedig az aktualis helyzetbol szamolja
-        Node startNode = new Node(state.i, state.j, null, 0, calcHeuristic(state.i, state.j));
+        Node startNode = new Node(state.i, state.j, null, 0, calcHeuristic(state.i, state.j, findGoalCell()));
         //prioritasi sor,  ket node-ot hasonlit ossze, az f-ek alapjan, alacsonyabb f-el rendelkezo kap nagyobb prioritast
         PriorityQueue<Node> openNodes = new PriorityQueue<>((node1, node2) -> node1.f() - node2.f());
         //letrehoz egy halmazt
@@ -165,7 +193,7 @@ public class Agent extends RaceTrackPlayer {
                     //ha lepheto, letrehoz egy uj node-t, ha nincs benne se a nyitott,se a zart sorban, akkor hozzadja az openNodes-hoz.
 
 
-                    Node neighbor = new Node(nextRow, nextColumn, currentNode, currentNode.g + 1, calcHeuristic(nextRow, nextColumn));
+                    Node neighbor = new Node(nextRow, nextColumn, currentNode, currentNode.g + 1, calcHeuristic(nextRow, nextColumn, findGoalCell()));
                     if (!closedNodes.contains(neighbor) && !openNodes.contains(neighbor)) {
                         openNodes.add(neighbor);
                     }
