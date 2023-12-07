@@ -141,7 +141,7 @@ public class SamplePlayer extends RaceTrackPlayer {
             if (isGoal(currentNode)) { //ha a celmezo, akkor visszavezeti  az utat. felepiti a cel es a kezdopont kozotti utat
                 return reconstructRoute(currentNode);
             }
-            // Szomszedos
+            // Szomszedos mezok vizsgalata
             // dupla ciklussal megnezi az osszes szomszedjat, az atlosakat is
             // Szomszedos mezok keresese
             for (int vi = -1; vi <= 1; vi++) {
@@ -154,11 +154,16 @@ public class SamplePlayer extends RaceTrackPlayer {
                     int nextRow = currentNode.i + vi;
                     int nextColumn = currentNode.j + vj;
 
+
+                    // Ellenorzes, hogy lephetunk-e a mezore
+
                     if (!canMoveTo(nextRow, nextColumn)) {
                          nextRow = currentNode.i - vi;
                          nextColumn = currentNode.j - vj;
                         continue;
                     }
+                    //ha lepheto, letrehoz egy uj node-t, ha nincs benne se a nyitott,se a zart sorban, akkor hozzadja az openNodes-hoz.
+
 
                     Node neighbor = new Node(nextRow, nextColumn, currentNode, currentNode.g + 1, calcHeuristic(nextRow, nextColumn));
                     if (!closedNodes.contains(neighbor) && !openNodes.contains(neighbor)) {
