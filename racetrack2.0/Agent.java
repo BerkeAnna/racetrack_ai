@@ -8,7 +8,12 @@ import game.racetrack.utils.Coin;
 import game.racetrack.utils.PlayerState;
 import game.racetrack.utils.PathCell;
 import game.racetrack.utils.Cell;
-import java.util.*;
+import java.util.Random;
+import java.util.LinkedList;
+import java.util.PriorityQueue;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 /**
  * jatekos implementalasa
  * tartalmazza a jatekos logikajat, utvonal keresest
@@ -252,6 +257,5 @@ public class Agent extends RaceTrackPlayer {
             return Objects.hash(i, j);
         }
     }
-
 
 }
