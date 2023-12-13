@@ -23,6 +23,7 @@ public class SamplePlayer extends RaceTrackPlayer {
     private int[] goalPosition;
     private static final int SPEED = 1;
 
+
     /**
      * Mozgasiranyok
      */
@@ -31,6 +32,7 @@ public class SamplePlayer extends RaceTrackPlayer {
     private Direction RIGHT = RaceTrackGame.DIRECTIONS[5];
     private Direction UP = RaceTrackGame.DIRECTIONS[3];
     private Direction STAY = RaceTrackGame.DIRECTIONS[0];
+    private Coin[] coins;
     /**
      * Konstruktor
      *
@@ -40,8 +42,12 @@ public class SamplePlayer extends RaceTrackPlayer {
      * @param coins - ermek tombje, amik a palyan vannak
      * @param color - szinek
      */
+
+
+    // Konstruktor kiegészítése az érmék fogadására
     public SamplePlayer(PlayerState state, Random random, int[][] track, Coin[] coins, int color) {
         super(state, random, track, coins, color);
+        this.coins = coins;
         this.track = track;
         this.goalPosition = findGoalPosition();
     }
@@ -104,7 +110,7 @@ public class SamplePlayer extends RaceTrackPlayer {
                 }
             }
         }
-        return null; // Goal cell not found or no valid parent
+        return null;
     }
 
 
@@ -119,14 +125,29 @@ public class SamplePlayer extends RaceTrackPlayer {
 
 
 
-    /** kiszamolja a megadott koordinatak alapjan a mezo manhattan tavolsagat a celhoz kepest
+    /** kiszamolja a megadott koordinatak alapjan a mezo manhattan tavolsagat a celcellahoz kepest
+     *  A heurisztikus ertek a Manhattan-tavolsag es az utvonalon levo ermek ertekenek kombinacioja.
+     *  A Manhattan-tavolsag az aktualis cella es a celcella kozotti tavolsag, mig az ermek erteke
+     *  csokkenti a heurisztikus erteket, osztonozve az agenst az ermek felvetelere.
+     *
      * @param i - 1. koordinata -aktualis mezo sora
      * @param j - 2. koordinata - aktualis mezo oszlopa
+     * @param cell - egy cella, amihez a tavolsagot nezzuk
      * @return  heurisztikus erteke - abszolut ertek osszege, az i es celmezo sora, a j es celmezo oszlopa
      */
     private int calcHeuristic(int i, int j, PathCell cell) {
-        Cell startCell = new Cell(i,j);
-        return RaceTrackGame.manhattanDistance(startCell, cell);
+        Cell currentCell = new Cell(i, j);
+        int distanceToGoal = RaceTrackGame.manhattanDistance(currentCell, cell);
+        int coinValue = 0;
+
+        // Az utvonalon levo ermek ertekelese
+        for (Coin coin : coins) {
+            if (isOnPath(currentCell, new Cell(coin.i, coin.j))) {
+                coinValue += 10; //  minden ermeert 10 pont
+            }
+        }
+
+        return distanceToGoal - coinValue;
     }
 
 
@@ -146,6 +167,29 @@ public class SamplePlayer extends RaceTrackPlayer {
         }
         return route.isEmpty() ? STAY : route.getFirst(); //ha ures a route maradjon egyhelyben, ha nem ures a route 1. elemevel ter vissza
     }
+
+    /**
+     * Meghatarozza, hogy egy adott erme cella az utvonalon van-e.
+     * Ez a metodus egy geometriai megkozelitest hasznal az utvonal es az erme cella kozotti tavolsag meghatarozasara.
+     * Az utvonalat a jelenlegi cella es a celcella kozotti egyeneskent kezeli, es kiszamitja az erme cella tavolsagat ettol az egyenestol.
+     * Ha az erme cella  kozel van az egyeneshez, akkor feltetelezzuk, hogy az utvonalon van.
+     *
+     * @param current A jelenlegi cella.
+     * @param coinCell Az erme cellája.
+     * @return Igaz, ha az erme cella az utvonalon van, kulonben hamis.
+     */
+    private boolean isOnPath(Cell current, Cell coinCell) {
+
+        int x = goalPosition[1] - current.i; // X iranyu elterés a celtol
+        int y = goalPosition[0] - current.j; // Y iranyu elterés a celtol
+
+        // Az utvonal es az erme kozti tav szamitasa
+        int distance = Math.abs(y * coinCell.i - x * coinCell.j + goalPosition[1] * current.j - goalPosition[0] * current.i) / (int)Math.sqrt(x*x + y*y);
+
+        // Ha a tavolsag alatt van, akkor feltetelezzuk, hogy az erme az utvonalon van
+        return distance < 3;
+    }
+
 
 
     /**

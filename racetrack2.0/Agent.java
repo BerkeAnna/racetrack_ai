@@ -122,6 +122,7 @@ public class Agent extends RaceTrackPlayer {
     /** kiszamolja a megadott koordinatak alapjan a mezo manhattan tavolsagat a celhoz kepest
      * @param i - 1. koordinata -aktualis mezo sora
      * @param j - 2. koordinata - aktualis mezo oszlopa
+     * @param cell - egy Pathcell
      * @return  heurisztikus erteke - abszolut ertek osszege, az i es celmezo sora, a j es celmezo oszlopa
      */
     private int calcHeuristic(int i, int j, PathCell cell) {
