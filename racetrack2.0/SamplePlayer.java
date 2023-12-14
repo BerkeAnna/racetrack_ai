@@ -187,7 +187,7 @@ public class SamplePlayer extends RaceTrackPlayer {
         int distance = Math.abs(y * coinCell.i - x * coinCell.j + goalPosition[1] * current.j - goalPosition[0] * current.i) / (int)Math.sqrt(x*x + y*y);
 
         // Ha a tavolsag alatt van, akkor feltetelezzuk, hogy az erme az utvonalon van
-        return distance < 3;
+        return distance < 10;
     }
 
 
