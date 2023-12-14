@@ -126,15 +126,16 @@ public class SamplePlayer extends RaceTrackPlayer {
 
 
     /** kiszamolja a megadott koordinatak alapjan a mezo manhattan tavolsagat a celcellahoz kepest
-     *  A heurisztikus ertek a Manhattan-tavolsag es az utvonalon levo ermek ertekenek kombinacioja.
-     *  A Manhattan-tavolsag az aktualis cella es a celcella kozotti tavolsag, mig az ermek erteke
-     *  csokkenti a heurisztikus erteket, osztonozve az agenst az ermek felvetelere.
+     *  a heurisztika a celcellaig vezeto tavolsagon alapul, csokkentve az utvonalon levo ermek ertekevel.
+     * figyelembe veszi az ermek helyzetet is
      *
      * @param i - 1. koordinata -aktualis mezo sora
      * @param j - 2. koordinata - aktualis mezo oszlopa
      * @param cell - egy cella, amihez a tavolsagot nezzuk
-     * @return  heurisztikus erteke - abszolut ertek osszege, az i es celmezo sora, a j es celmezo oszlopa
-     */
+     * @return A szamitott heurisztikai ertek, amely a celcellahoz vezeto tavolsag es az ermek erteke alapjan.
+     *  *         A tavolsag Manhattan-tavolsaggal van kiszamitva, es minden utvonalon levo ermeert 10 pontot vonunk le.
+     *  *         Minel alacsonyabb ez az ertek, annal elonyosebb a cella a palyan valo navigalas soran.
+     *  */
     private int calcHeuristic(int i, int j, PathCell cell) {
         Cell currentCell = new Cell(i, j);
         int distanceToGoal = RaceTrackGame.manhattanDistance(currentCell, cell);
@@ -169,14 +170,13 @@ public class SamplePlayer extends RaceTrackPlayer {
     }
 
     /**
-     * Meghatarozza, hogy egy adott erme cella az utvonalon van-e.
-     * Ez a metodus egy geometriai megkozelitest hasznal az utvonal es az erme cella kozotti tavolsag meghatarozasara.
+     * Megnezi, hogy egy adott erme az utvonalon van-e.
      * Az utvonalat a jelenlegi cella es a celcella kozotti egyeneskent kezeli, es kiszamitja az erme cella tavolsagat ettol az egyenestol.
-     * Ha az erme cella  kozel van az egyeneshez, akkor feltetelezzuk, hogy az utvonalon van.
+     * Ha az erme cella  kozel van az egyeneshez, akkor feltetelezi, hogy az utvonalon van.
      *
      * @param current A jelenlegi cella.
      * @param coinCell Az erme cellája.
-     * @return Igaz, ha az erme cella az utvonalon van, kulonben hamis.
+     * @return Igaz, ha az erme az utvonalon van, kulonben hamis.
      */
     private boolean isOnPath(Cell current, Cell coinCell) {
 
