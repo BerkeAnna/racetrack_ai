@@ -18,11 +18,10 @@ import java.util.Set;
  * jatekos implementalasa
  * tartalmazza a jatekos logikajat, utvonal keresest
  */
-public class SamplePlayer extends RaceTrackPlayer {
+public class Agent extends RaceTrackPlayer {
     private int[][] track;
     private int[] goalPosition;
     private static final int SPEED = 1;
-
 
     /**
      * Mozgasiranyok
@@ -32,7 +31,6 @@ public class SamplePlayer extends RaceTrackPlayer {
     private Direction RIGHT = RaceTrackGame.DIRECTIONS[5];
     private Direction UP = RaceTrackGame.DIRECTIONS[3];
     private Direction STAY = RaceTrackGame.DIRECTIONS[0];
-    private Coin[] coins;
     /**
      * Konstruktor
      *
@@ -42,12 +40,8 @@ public class SamplePlayer extends RaceTrackPlayer {
      * @param coins - ermek tombje, amik a palyan vannak
      * @param color - szinek
      */
-
-
-    // Konstruktor kiegészítése az érmék fogadására
-    public SamplePlayer(PlayerState state, Random random, int[][] track, Coin[] coins, int color) {
+    public Agent(PlayerState state, Random random, int[][] track, Coin[] coins, int color) {
         super(state, random, track, coins, color);
-        this.coins = coins;
         this.track = track;
         this.goalPosition = findGoalPosition();
     }
@@ -89,7 +83,7 @@ public class SamplePlayer extends RaceTrackPlayer {
 
     /**
      * A cel cella keresese
-     * @return Egy pathcell, ami a célezőt tárolja az osevel együtt
+     * @return Egy pathcell, ami a celt tarolja az osevel egyutt
      *  *         Ha nincs cel a palyan vagy nem talal, null ertekkel ter vissza.
      */
     private PathCell findGoalCell() {
@@ -110,7 +104,7 @@ public class SamplePlayer extends RaceTrackPlayer {
                 }
             }
         }
-        return null;
+        return null; // Goal cell not found or no valid parent
     }
 
 
@@ -125,30 +119,17 @@ public class SamplePlayer extends RaceTrackPlayer {
 
 
 
-    /** kiszamolja a megadott koordinatak alapjan a mezo manhattan tavolsagat a celcellahoz kepest
-     *  a heurisztika a celcellaig vezeto tavolsagon alapul, csokkentve az utvonalon levo ermek ertekevel.
-     * figyelembe veszi az ermek helyzetet is
-     *
+    /** kiszamolja a megadott koordinatak alapjan a mezo manhattan tavolsagat a celhoz kepest
+     * A Manhattan-tavolsag azt mutatja meg, hogy hany lepesre van egymastol ket pont,
+     * ha csak vizszintes vagy fuggoleges lepesek lehetnek.
      * @param i - 1. koordinata -aktualis mezo sora
      * @param j - 2. koordinata - aktualis mezo oszlopa
-     * @param cell - egy cella, amihez a tavolsagot nezzuk
-     * @return A szamitott heurisztikai ertek, amely a celcellahoz vezeto tavolsag es az ermek erteke alapjan.
-     *  *         A tavolsag Manhattan-tavolsaggal van kiszamitva, es minden utvonalon levo ermeert 10 pontot vonunk le.
-     *  *         Minel alacsonyabb ez az ertek, annal elonyosebb a cella a palyan valo navigalas soran.
-     *  */
+     * @param cell - a cel Pathcell, aminek koordinataihoz viszonyitva szamoljuk a tavolsagot.
+     * @return  heurisztikus erteke - abszolut ertek osszege, az i es celmezo sora, a j es celmezo oszlopa
+     */
     private int calcHeuristic(int i, int j, PathCell cell) {
-        Cell currentCell = new Cell(i, j);
-        int distanceToGoal = RaceTrackGame.manhattanDistance(currentCell, cell);
-        int coinValue = 0;
-
-        // Az utvonalon levo ermek ertekelese
-        for (Coin coin : coins) {
-            if (isOnPath(currentCell, new Cell(coin.i, coin.j))) {
-                coinValue += 10; //  minden ermeert 10 pont
-            }
-        }
-
-        return distanceToGoal - coinValue;
+        Cell startCell = new Cell(i,j);
+        return RaceTrackGame.manhattanDistance(startCell, cell);
     }
 
 
@@ -168,29 +149,6 @@ public class SamplePlayer extends RaceTrackPlayer {
         }
         return route.isEmpty() ? STAY : route.getFirst(); //ha ures a route maradjon egyhelyben, ha nem ures a route 1. elemevel ter vissza
     }
-
-    /**
-     * Megnezi, hogy egy adott erme az utvonalon van-e.
-     * Az utvonalat a jelenlegi cella es a celcella kozotti egyeneskent kezeli, es kiszamitja az erme cella tavolsagat ettol az egyenestol.
-     * Ha az erme cella  kozel van az egyeneshez, akkor feltetelezi, hogy az utvonalon van.
-     *
-     * @param current A jelenlegi cella.
-     * @param coinCell Az erme cellája.
-     * @return Igaz, ha az erme az utvonalon van, kulonben hamis.
-     */
-    private boolean isOnPath(Cell current, Cell coinCell) {
-
-        int x = goalPosition[1] - current.i; // X iranyu elterés a celtol
-        int y = goalPosition[0] - current.j; // Y iranyu elterés a celtol
-
-        // Az utvonal es az erme kozti tav szamitasa
-        int distance = Math.abs(y * coinCell.i - x * coinCell.j + goalPosition[1] * current.j - goalPosition[0] * current.i) / (int)Math.sqrt(x*x + y*y);
-
-        // Ha a tavolsag alatt van, akkor feltetelezzuk, hogy az erme az utvonalon van
-        return distance < 10;
-
-    }
-
 
 
     /**
@@ -302,5 +260,4 @@ public class SamplePlayer extends RaceTrackPlayer {
             return Objects.hash(i, j);
         }
     }
-
 }
