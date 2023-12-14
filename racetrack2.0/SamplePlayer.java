@@ -188,6 +188,7 @@ public class SamplePlayer extends RaceTrackPlayer {
 
         // Ha a tavolsag alatt van, akkor feltetelezzuk, hogy az erme az utvonalon van
         return distance < 10;
+
     }
 
 
